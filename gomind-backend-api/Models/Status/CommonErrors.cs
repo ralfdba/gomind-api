@@ -1,0 +1,48 @@
+﻿namespace gomind_backend_api.Models.Errors
+{
+    public static class CommonErrors
+    {
+        #region Token
+        public static readonly string MissingToken = "Ingrese todos los parámetros necesarios (Token).";
+        public static readonly string InvalidToken = "Token no válido o expirado.";
+        #endregion
+
+        #region Login
+        public static readonly string MissingCredentials = "Debe ingresar el correo y password.";
+        public static readonly string InvalidCredentials = "No se ha podido iniciar sesión.";
+        #endregion
+
+        #region Generic Errors
+        public static string UnexpectedError(string details) => $"Error inesperado: {details}";
+        public static string ValidationFailed = "Validación fallida. Por favor, revise los campos.";
+        public static readonly string GenericNoValid1 = "El dato ingresado no es válido.";
+        public static readonly string GenericNoValid2 = "No se pudo grabar la información, intenta nuevamente.";
+        public static readonly string GenericNoValid3 = "No existe un registro con el id proporcionado.";
+        public static readonly string BadRequest1 = "Ingrese todos los parámetros necesarios.";
+        public static readonly string UserIdNoValid = "El usuario no es válido.";
+        public static readonly string ProductIdNoValid = "El producto no es válido.";
+        #endregion
+
+        #region File
+        public static readonly string FileNoUploaded = "No se ha subido ningún archivo.";
+        public static readonly string FileTypeNoValidPDF = "Solo se pueden subir archivos PDF.";
+        #endregion
+
+        #region Job
+        public static readonly string JobNotFound = "No se encontro ningun job con el proporcionado.";
+        #endregion
+
+        #region Reference Range
+        public static readonly string ReferenceRangeNoValid1 = "Debe especificar un valor mínimo y máximo para la referencia de rango.";
+        public static readonly string ReferenceRangeNoValid2 = "Debe especificar un valor el campo 'condition_value'.";
+        #endregion
+
+
+        #region ValidationError
+        public static MessageResponse ValidationError(Dictionary<string, string[]> errors)
+        {
+            return MessageResponse.Create(ValidationFailed, errors);
+        }
+        #endregion
+    }
+}

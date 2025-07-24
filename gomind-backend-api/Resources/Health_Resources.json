@@ -1,0 +1,123 @@
+{
+  "Physical": {
+    "Item1": {
+      "title": "Salud en riesgo",
+      "desc": "Tu estilo de vida actual podría estar comprometiendo seriamente tu salud. Se recomienda realizar cambios significativos en tu dieta, hábitos de sueño, actividad física e hidratación para prevenir problemas de salud futuros.",
+      "advice": "Aumenta el consumo de frutas y verduras frescas.",
+      "color": "f02c1a",
+      "face": "fa-face-sad-cry"
+    },
+    "Item2": {
+      "title": "Salud moderada",
+      "desc": "Tu estilo de vida tiene algunos aspectos saludables, pero también áreas que requieren atención. Con algunos ajustes, puedes mejorar tu bienestar general.",
+      "advice": "Intenta dormir entre 7 y 8 horas por noche.",
+      "color": "ffce33",
+      "face": "fa-face-sad-tear"
+    },
+    "Item3": {
+      "title": "Salud buena",
+      "desc": "Tienes un buen equilibrio en tu estilo de vida, pero aún hay margen para perfeccionar algunos aspectos. Mantente enfocado en mantener hábitos saludables.",
+      "advice": "Asegúrate de limitar la comida rápida a ocasiones excepcionales.",
+      "color": "6eec3f",
+      "face": "fa-face-smile"
+    },
+    "Item4": {
+      "title": "Salud óptima",
+      "desc": "Tu estilo de vida es excelente y refleja hábitos saludables en todas las áreas. Sigue así para mantener tu bienestar a largo plazo.",
+      "advice": "Haz chequeos médicos regulares para asegurarte de mantener tu buen estado de salud.",
+      "color": "50d320",
+      "face": "fa-face-smile-wink"
+    }
+  },
+  "Emotional": {
+    "Item1": {
+      "title": "",
+      "desc": "Bajo",
+      "advice": "Cada pequeño paso que das hacia un mejor manejo del estrés te acerca a una vida más serena y feliz.",
+      "color": "#13ff00",
+      "face": ""
+    },
+    "Item2": {
+      "title": "",
+      "desc": "Moderado",
+      "advice": "Cada pequeño paso que das hacia un mejor manejo del estrés te acerca a una vida más serena y feliz.",
+      "color": "#ffaa00",
+      "face": ""
+    },
+    "Item3": {
+      "title": "",
+      "desc": "Alto",
+      "advice": "Cada pequeño paso que das hacia un mejor manejo del estrés te acerca a una vida más serena y feliz.",
+      "color": "#ff5d00",
+      "face": ""
+    },
+    "Item4": {
+      "title": "",
+      "desc": "Muy Alto",
+      "advice": "Cada pequeño paso que das hacia un mejor manejo del estrés te acerca a una vida más serena y feliz.",
+      "color": "#ff0000",
+      "face": ""
+    }
+  },
+  "Finance": {
+    "Item1": {
+      "title": "",
+      "desc": "Problemas financieros",
+      "advice": "Consulta con un asesor financiero para ajustar tu situación.",
+      "color": "#ff0000",
+      "face": ""
+    },
+    "Item2": {
+      "title": "",
+      "desc": "Situación financiera manejable",
+      "advice": "Mejora tu presupuesto añadiendo ahorros para imprevistos.",
+      "color": "#ff5d00",
+      "face": ""
+    },
+    "Item3": {
+      "title": "",
+      "desc": "Situación financiera sólida.",
+      "advice": "Mantén tu fondo de emergencia y asegúrate de actualizarlo regularmente.",
+      "color": "#13ff00",
+      "face": ""
+    },
+    "Item4": {
+      "title": "",
+      "desc": "",
+      "advice": "",
+      "color": "#13ff00",
+      "face": ""
+    }
+  },
+  "Goldberg": {
+    "Item1": {
+      "title": "Salud mental positiva o normal",
+      "desc": "Estás en un buen estado de salud mental. Muestras un equilibrio emocional y bienestar general, con capacidad para manejar el estrés y las dificultades diarias.",
+      "advice": "Mantén tu bienestar participando en actividades que te relajen y fomenten tu bienestar emocional, como el ejercicio físico, la meditación, o la socialización con amigos y familia. Considera también participar en actividades que promuevan tu desarrollo personal.",
+      "color": "",
+      "face": ""
+    },
+    "Item2": {
+      "title": "Ligeros signos de malestar psicológico",
+      "desc": "Experimentas un poco de estrés o dificultades emocionales ocasionales, aunque no parece ser algo grave. Sin embargo, es importante prestar atención a estos signos para evitar que empeoren.",
+      "advice": "Realiza pequeños cambios para mejorar tu manejo del estrés. Esto podría incluir la incorporación de técnicas de relajación, el ejercicio físico, o establecer límites más claros entre el trabajo y el descanso. Si te sientes cómodo, podrías beneficiarte de hablar con un consejero o participar en programas de bienestar.",
+      "color": "",
+      "face": ""
+    },
+    "Item3": {
+      "title": "Problemas moderados de salud mental",
+      "desc": "Podrías estar experimentando síntomas moderados de ansiedad, estrés o depresión. Estos síntomas podrían estar afectando tu capacidad para disfrutar de tus actividades cotidianas y mantener un equilibrio emocional.",
+      "advice": "Es recomendable que consideres buscar ayuda, ya sea a través de un profesional de la salud mental o a través de recursos disponibles en tu lugar de trabajo, como programas de bienestar. Prueba incluir hábitos saludables en tu rutina diaria, como el ejercicio físico, una dieta equilibrada, y técnicas de relajación.",
+      "color": "",
+      "face": ""
+    },
+    "Item4": {
+      "title": "Problemas graves de salud mental",
+      "desc": "Los resultados indican un nivel significativo de malestar psicológico. Puedes estar enfrentando síntomas importantes de ansiedad, depresión o estrés. Esto puede estar afectando de manera grave tu vida personal y profesional.",
+      "advice": "Es fundamental que busques ayuda profesional lo antes posible. Contacta a un psicólogo, o profesional de salud mental, para obtener el apoyo que necesitas. También puedes comunicarte con tu departamento de recursos humanos o bienestar para explorar opciones de apoyo en el lugar de trabajo. Tu bienestar es una prioridad, y con el apoyo adecuado, podrás mejorar tu estado de salud.",
+      "color": "",
+      "face": ""
+    }
+  }
+
+}

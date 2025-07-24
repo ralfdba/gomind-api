@@ -1,0 +1,60 @@
+# Archivos y carpetas de compilación
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.log
+
+# Archivos de configuración local
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+
+# Archivos de usuario específicos de Visual Studio
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+
+# Archivos de caché
+*.vs/
+.vs/
+.vscode/
+ReSharper/
+*.sln.ide/
+*.userprefs
+
+# Archivos temporales y de lock
+*.lock.json
+*.log
+*.cache
+*.tmp
+
+# Archivos de paquetes
+packages/
+*.nupkg
+*.snupkg
+
+# Archivos de compilación y paquetes NuGet
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Archivos de publicación
+publish/
+wwwroot/
+
+# Archivos de entorno de desarrollo
+.env
+.env.*
+
+# Archivos de log
+logs/
+*.log
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
