@@ -21,7 +21,8 @@ namespace gomind_backend_api.DB
 
         public MariaDbConnection(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("MariaDb")
+            //_connectionString = configuration.GetConnectionString("MariaDb")
+            _connectionString = Environment.GetEnvironmentVariable("MARIADB_CONNECTION")
                 ?? throw new InvalidOperationException("MariaDb connection string not found");
         }
 

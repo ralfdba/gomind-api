@@ -22,6 +22,9 @@ namespace gomind_backend_api.Models.ReferenceRange
         [JsonPropertyName("parameter_id")]
         public int ParameterId { get; set; }
 
+        [JsonPropertyName("key_result")]
+        public string KeyResult { get; set; }
+
         [JsonPropertyName("min_value")]
         public decimal? MinValue { get; set; }
 
@@ -62,18 +65,21 @@ namespace gomind_backend_api.Models.ReferenceRange
         [JsonPropertyName("parameter_id")]       
         [Range(1, int.MaxValue, ErrorMessage = "El ID del parámetro debe ser un número positivo.")]        
         public int ParameterId { get; set; }
-        
-        [JsonPropertyName("min_value")]
-        public decimal? MinValue { get; set; }
-        
-        [JsonPropertyName("max_value")]
-        public decimal? MaxValue { get; set; }
+
+        [JsonPropertyName("key_result")]
+        public string KeyResult { get; set; } = "Valor";
 
         [Required]
         [JsonPropertyName("condition_type")]
         [Range(1, 6)]
         [EnumDataType(typeof(ConditionType), ErrorMessage = "Tipo de condición inválido.")]
         public ConditionType ConditionType { get; set; } = ConditionType.RANGE;
+
+        [JsonPropertyName("min_value")]
+        public decimal? MinValue { get; set; }
+        
+        [JsonPropertyName("max_value")]
+        public decimal? MaxValue { get; set; }        
        
         [JsonPropertyName("condition_value")]
         public decimal? ConditionValue { get; set; }
@@ -93,7 +99,6 @@ namespace gomind_backend_api.Models.ReferenceRange
 
         [Required]
         [JsonPropertyName("notes")]
-        public string Notes { get; set; }
+        public string Notes { get; set; }       
     }
-
 }

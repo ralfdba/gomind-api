@@ -5,6 +5,7 @@
         #region Token
         public static readonly string MissingToken = "Ingrese todos los parámetros necesarios (Token).";
         public static readonly string InvalidToken = "Token no válido o expirado.";
+        public static readonly string UserTokenNoValid1 = "Error al intentar obtener el usuario.";
         #endregion
 
         #region Login
@@ -30,11 +31,15 @@
 
         #region Job
         public static readonly string JobNotFound = "No se encontro ningun job con el proporcionado.";
+        public static readonly string JobNotValid = "El job ingresado debe estar Completed y sin errores.";
+        public static readonly string JobKeyResultNull = "El key result no puede ser null.";
         #endregion
 
         #region Reference Range
         public static readonly string ReferenceRangeNoValid1 = "Debe especificar un valor mínimo y máximo para la referencia de rango.";
         public static readonly string ReferenceRangeNoValid2 = "Debe especificar un valor el campo 'condition_value'.";
+        public static readonly string ReferenceRangeNoValid3 = "El rango mínimo debe ser inferior al rango máximo.";
+
         #endregion
 
 

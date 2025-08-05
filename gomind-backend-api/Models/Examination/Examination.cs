@@ -6,7 +6,6 @@ namespace gomind_backend_api.Models.Examination
 {  
     public class Examination
     {
-
         public class ExaminationRequest
         {
             [FromForm(Name = "user_id")]
@@ -44,14 +43,12 @@ namespace gomind_backend_api.Models.Examination
             [Required]
             [JsonPropertyName("ai_recommendation")]
             public string AiRecommendation { get; set; }
-        }
-        public class ResultadoAnalisis
+        }       
+        public class ParameterPlane
         {
-            [JsonPropertyName("Valor")]
-            public string Valor { get; set; }
-
-            [JsonPropertyName("Unidad de medida")]
-            public string UnidadDeMedida { get; set; }  
+            public string Nombre { get; set; }
+            public string KeyResult { get; set; }
+            public decimal Dato { get; set; }
         }
         public class Analysis
         {
@@ -60,6 +57,13 @@ namespace gomind_backend_api.Models.Examination
 
             [JsonPropertyName("results")]
             public List<string> Results { get; set; } = new();
-        }       
+        }
+
+        public class AnalysisSaveResponse
+        {
+            public int NewRecommendationId { get; set; }
+
+        }
+
     }
 }

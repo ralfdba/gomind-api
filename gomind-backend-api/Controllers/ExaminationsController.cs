@@ -5,11 +5,14 @@ using gomind_backend_api.Models.Dynamo;
 using gomind_backend_api.Models.Errors;
 using gomind_backend_api.Models.Examination;
 using gomind_backend_api.Models.Login;
+using gomind_backend_api.Models.Parameters;
 using gomind_backend_api.Models.Products;
 using gomind_backend_api.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace gomind_backend_api.Controllers
@@ -93,7 +96,7 @@ namespace gomind_backend_api.Controllers
                     user_id = request.UserId,                     
                     created_at = DateTime.Now,                     
                     updated_at = DateTime.Now,                       
-                    status = JobStatus.Pending,
+                    job_status = JobStatus.Pending,
                     bucket_name = bucketName,
                     key_upload = key                  
 
@@ -140,7 +143,7 @@ namespace gomind_backend_api.Controllers
                 #region Response
                 JobDetailResponse? jobDetailResponse = null;
 
-                if (job.status == JobStatus.Completed) {
+                if (job.job_status == JobStatus.Completed) {
 
                     jobDetailResponse = new JobDetailResponse
                     {
@@ -156,7 +159,7 @@ namespace gomind_backend_api.Controllers
                 var response = new JobResponse
                 {
                     JobId = job.id,
-                    Status = job.status,
+                    Status = job.job_status,
                     Response = jobDetailResponse
                 };
                 #endregion
@@ -187,12 +190,40 @@ namespace gomind_backend_api.Controllers
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.BadRequest1));
                 }
-                #endregion
+                
+                var job = await _dynamoDbService.GetAsync<Job>(job_id);
 
-                #region Response
-                var stream = await _s3Service.GetFileAsync(bucketName, "results-ok", job_id);
-                var response = await _bl.ProcesarArchivoJsonAsync(stream);
+                if (job == null)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.JobNotFound));
+                }
+                
+                if (job.job_status != JobStatus.Completed || !job.success)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.JobNotValid));
+                }
+
+                if (job.key_result == null)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.JobKeyResultNull));
+                }
                 #endregion
+               
+                #region Response                
+                var response = new List<AnalysisResult>();
+
+                var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync(job.key_result);
+                
+                if (getDataProcessed == null || getDataProcessed.Count <= 0) 
+                {
+                    var stream = await _s3Service.GetFileAsync(bucketName, "results-ok", job_id);
+                    response = await _bl.ProcesarArchivoJsonAsync(stream, job.key_result);
+                }
+                else
+                {
+                    response = getDataProcessed;
+                }        
+                #endregion                   
 
                 _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
                 return Ok(response);
@@ -207,7 +238,7 @@ namespace gomind_backend_api.Controllers
 
         #region Guardar Análisis IA 
         [HttpPost("analysis")]
-        public IActionResult SaveAnalysis([FromBody] Examination.AnalysisRequest request)
+        public async Task<IActionResult> SaveAnalysis([FromBody] Examination.AnalysisRequest request)
         {
             #region Inicio Log Information
             var serializedRequest = JsonSerializer.Serialize(request);
@@ -216,12 +247,27 @@ namespace gomind_backend_api.Controllers
 
             try
             {
+                #region Valdaciones Iniciales
+
                 if (!ModelState.IsValid) {
                     return BadRequest(ModelState);
                 }
 
-                //_logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
-                return Ok();
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return Ok(MessageResponse.Create(CommonErrors.UserTokenNoValid1));
+                }
+                #endregion
+
+                #region Response
+
+                var response = await _bl.CreateUserRecommendationAsync(request, int.Parse(userIdClaim.Value));
+
+                #endregion
+                
+                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
+                return Ok(response);
             }
             catch (Exception ex)
             {

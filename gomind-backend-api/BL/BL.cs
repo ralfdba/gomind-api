@@ -52,69 +52,7 @@ namespace gomind_backend_api.BL
             _healthResourcesService = healthResourcesService;
             _bcrypt = new BcryptServices();
         }
-        #region Consultar Analisis por Parametros
-        public async Task<List<ResultParameterRangeReference>> ProcesarArchivoJsonAsync(Stream jsonStream)
-        {            
-            var resultados = new List<ResultParameterRangeReference>();
-
-            using var reader = new StreamReader(jsonStream);
-            var json = await reader.ReadToEndAsync();
-
-            var data = JsonSerializer.Deserialize<Dictionary<string, ResultadoAnalisis>>(json)
-                             ?? new Dictionary<string, ResultadoAnalisis>();
-
-            foreach (var kvp in data)
-            {
-                var nombre = kvp.Key;
-                decimal valor = decimal.Parse(kvp.Value.Valor, CultureInfo.InvariantCulture);
-
-                var notas = await _dbConnection.ExecuteQueryAsync(
-                    "CALL api_get_parameter_notes(@p_nombre, @p_valor);",            
-                   
-                    reader =>   
-                    {                
-                        return new              
-                        {
-                            Uuid = reader.IsDBNull("uuid") ? null : reader.GetGuid("uuid").ToString(),
-                            Name = reader.IsDBNull("name") ? null : reader.GetString("name"),
-                            Description = reader.IsDBNull("description") ? null : reader.GetString("description"),
-                            UnitOfMeasure = reader.IsDBNull("unit_of_measure") ? null : reader.GetString("unit_of_measure"),
-                            Note = reader.IsDBNull("note") ? null : reader.GetString("note")
-                        };
-                    },
-                    new Dictionary<string, object>
-                    {
-                        { "p_nombre", nombre },
-                        { "p_valor", valor }
-                    });
-                
-                if (!notas.Any() || notas.First().Uuid == null)
-                    continue;
-
-                // Se toman los datos del parámetro de la primera fila
-                var first = notas.First();
-
-                resultados.Add(new ResultParameterRangeReference
-                {
-                    Parameter = new ParametersRangeReference
-                    {
-                        Uuid = first.Uuid,
-                        Name = first.Name,
-                        Description = first.Description,
-                        UnitOfMeasure = first.UnitOfMeasure
-                    },
-                    Analysis = new Analysis
-                    {
-                        Value = valor,
-                        Results = notas.Select(n => n.Note).ToList()
-                    }
-                });
-            }
-
-            return resultados;
-        }
-        #endregion
-
+        
         #region Obtener Usuario Email
         public async Task<UserInfo?> GetUserByEmail(string email, string pass)
         {               
@@ -467,15 +405,30 @@ namespace gomind_backend_api.BL
         public async Task<IEnumerable<Parameters>> GetParameters()
         {
             return await _dbConnection.ExecuteQueryAsync<Parameters>(
-                "CALL api_get_parameters()",
-                (reader) => new Parameters
+            "CALL api_get_parameters()",
+            (reader) =>
+            {
+                List<string> keysResultsList;
+                try
+                {
+                    keysResultsList = JsonSerializer.Deserialize<List<string>>(
+                        reader.IsDBNull(reader.GetOrdinal("keys_results")) ? "[]" : reader.GetString("keys_results")
+                    ) ?? new List<string>();
+                }
+                catch 
+                {
+                    keysResultsList = new List<string>(); 
+                }
+                return new Parameters
                 {
                     Id = reader.GetInt32("id"),
                     Name = reader.GetString("name"),
                     Description = reader.GetString("description"),
-                    UnitOfMeasure = reader.GetString("unit_of_measure")
-                }
-            );
+                    UnitOfMeasure = reader.IsDBNull("unit_of_measure") ? null : reader.GetString("unit_of_measure").ToString(),
+                    KeysResults = keysResultsList                
+                };           
+            }       
+            );        
         }
         #endregion
 
@@ -483,19 +436,35 @@ namespace gomind_backend_api.BL
         public async Task<Parameters?> GetParametersById(int parameterId)
         {
             var dataParameter = await _dbConnection.ExecuteQueryAsync<Parameters>(
-               "CALL api_get_parameter_by_id(@p_id)",
-               (reader) => new Parameters
-               {
-                   Id = reader.GetInt32("id"),
-                   Name = reader.GetString("name"),
-                   Description = reader.GetString("description"),
-                   UnitOfMeasure = reader.GetString("unit_of_measure")
-               },
-                new Dictionary<string, object>
+                "CALL api_get_parameter_by_id(@p_id)",
+                (reader) =>
                 {
-                    { "p_id", parameterId }
-                }
-           );
+                    List<string> keysResultsList;
+                    try
+                    {
+                        keysResultsList = JsonSerializer.Deserialize<List<string>>(
+                            reader.IsDBNull(reader.GetOrdinal("keys_results")) ? "[]" : reader.GetString("keys_results")
+                            ) ?? new List<string>();
+                    }
+                    catch
+                    {
+                        keysResultsList = new List<string>();
+                    }
+                    return new Parameters
+                    {
+                        Id = reader.GetInt32("id"),
+                        Name = reader.GetString("name"),
+                        Description = reader.GetString("description"),
+                        UnitOfMeasure = reader.IsDBNull("unit_of_measure") ? null : reader.GetString("unit_of_measure").ToString(),
+                        KeysResults = keysResultsList
+                    };
+                },
+                new Dictionary<string, object>               
+                {
+                    { "p_id", parameterId }              
+               
+                }               
+                );            
             return dataParameter.FirstOrDefault() ?? new Parameters();
         }
         #endregion
@@ -505,13 +474,15 @@ namespace gomind_backend_api.BL
         {
             try 
             {
+                var keysResultsJson = JsonSerializer.Serialize(request.KeysResults);
                 var result = await _dbConnection.ExecuteNonQueryAsync(
-                "CALL api_insert_parameter(@p_name, @p_description, @p_unit_of_measure)",
+                "CALL api_insert_parameter(@p_name, @p_description, @p_unit_of_measure, @p_keys_results)",
                 new Dictionary<string, object>
                 {
                     { "p_name", request.Name },
                     { "p_description", request.Description },
-                    { "p_unit_of_measure", request.UnitOfMeasure }
+                    { "p_unit_of_measure", request.UnitOfMeasure },
+                    { "p_keys_results", keysResultsJson }
                 }
                 );
 
@@ -538,14 +509,16 @@ namespace gomind_backend_api.BL
         {
             try
             {
+                var keysResultsJson = JsonSerializer.Serialize(request.KeysResults);
                 var result = await _dbConnection.ExecuteNonQueryAsync(
-                "CALL api_update_parameter(@p_id, @p_name, @p_description, @p_unit_of_measure)",
+                "CALL api_update_parameter(@p_id, @p_name, @p_description, @p_unit_of_measure, @p_keys_results)",
                 new Dictionary<string, object>
                 {
                     { "p_id", parameterId },
                     { "p_name", request.Name },
                     { "p_description", request.Description },
-                    { "p_unit_of_measure", request.UnitOfMeasure }
+                    { "p_unit_of_measure", request.UnitOfMeasure },
+                    { "p_keys_results", keysResultsJson }
                 }            
                 );
 
@@ -607,6 +580,7 @@ namespace gomind_backend_api.BL
                 {          
                     Id = reader.GetInt32("id"),
                     ParameterId = reader.GetInt32("parameter_id"),
+                    KeyResult = reader.GetString("key_result"),
                     MinValue = reader.IsDBNull("min_value") ? (decimal?)null : reader.GetDecimal("min_value"),
                     MaxValue = reader.IsDBNull("max_value") ? (decimal?)null : reader.GetDecimal("max_value"),                   
                     ConditionType = (ConditionType)reader.GetInt32("condition_type"),
@@ -634,6 +608,7 @@ namespace gomind_backend_api.BL
                 {                  
                     Id = reader.GetInt32("id"),                   
                     ParameterId = reader.GetInt32("parameter_id"),
+                    KeyResult = reader.GetString("key_result"),
                     MinValue = reader.IsDBNull("min_value") ? (decimal?)null : reader.GetDecimal("min_value"),
                     MaxValue = reader.IsDBNull("max_value") ? (decimal?)null : reader.GetDecimal("max_value"),
                     ConditionType = (ConditionType)reader.GetInt32("condition_type"),
@@ -656,13 +631,46 @@ namespace gomind_backend_api.BL
         }
         #endregion
 
+        #region Obtener referencia de rango por Parameter id
+        public async Task<IEnumerable<ReferenceRange>> GetReferenceRangeByParameterId(int parameterId)
+        {
+            var dataParameter = await _dbConnection.ExecuteQueryAsync<ReferenceRange>(
+                "CALL api_get_reference_ranges_by_parameter_id(@p_parameter_id)",
+
+                (reader) => new ReferenceRange
+                {
+                    Id = reader.GetInt32("id"),
+                    ParameterId = reader.GetInt32("parameter_id"),
+                    KeyResult = reader.GetString("key_result"),
+                    MinValue = reader.IsDBNull("min_value") ? (decimal?)null : reader.GetDecimal("min_value"),
+                    MaxValue = reader.IsDBNull("max_value") ? (decimal?)null : reader.GetDecimal("max_value"),
+                    ConditionType = (ConditionType)reader.GetInt32("condition_type"),
+                    ConditionValue = reader.IsDBNull("condition_value") ? (decimal?)null : reader.GetDecimal("condition_value"),
+                    Gender = reader.GetString("gender"),
+                    MinAge = reader.GetInt32("min_age"),
+                    MaxAge = reader.GetInt32("max_age"),
+                    Active = reader.GetBoolean("active"),
+                    Notes = reader.GetString("notes"),
+                    CreatedAt = reader.GetDateTime("created_at"),
+                    UpdatedAt = reader.GetDateTime("updated_at")
+
+                },
+                new Dictionary<string, object>
+                {
+                    { "p_parameter_id", parameterId }
+                }
+           );
+            return dataParameter;
+        }
+        #endregion
+
         #region Crear referencia de rango
         public async Task<MessageResponse> CreateReferenceRange(ReferenceRangeRequest request)
         {
             try
             {
-                var result = await _dbConnection.ExecuteNonQueryAsync(                
-                    "CALL api_insert_reference_range(@p_parameter_id, @p_min_value, @p_max_value, @p_condition_type, @p_condition_value, @p_gender, @p_min_age, @p_max_age, @p_active, @p_notes)",
+                var result = await _dbConnection.ExecuteNonQueryAsync(
+                    "CALL api_insert_reference_range(@p_parameter_id, @p_min_value, @p_max_value, @p_condition_type, @p_condition_value, @p_gender, @p_min_age, @p_max_age, @p_active, @p_notes, @p_key_result)",
                     
                     new Dictionary<string, object>
                     {
@@ -675,7 +683,8 @@ namespace gomind_backend_api.BL
                         { "p_min_age", request.MinAge },
                         { "p_max_age", request.MaxAge },
                         { "p_active", request.Active },
-                        { "p_notes", request.Notes }
+                        { "p_notes", request.Notes },
+                        { "p_key_result", request.KeyResult }
                     }
                     );
 
@@ -696,9 +705,9 @@ namespace gomind_backend_api.BL
             {
                 var result = await _dbConnection.ExecuteNonQueryAsync(
 
-                    "CALL api_update_reference_range(@p_id, @p_parameter_id, @p_min_value, @p_max_value, @p_condition_type, @p_condition_value, @p_gender, @p_min_age, @p_max_age, @p_active, @p_notes)",               
+                    "CALL api_update_reference_range(@p_id, @p_parameter_id, @p_min_value, @p_max_value, @p_condition_type, @p_condition_value, @p_gender, @p_min_age, @p_max_age, @p_active, @p_notes, @p_key_result)",               
                     new Dictionary<string, object>               
-                    {                   
+                    {        
                         { "p_id", referenceRangeId },                         
                         { "p_parameter_id", request.ParameterId },
                         { "p_min_value", request.MinValue },
@@ -709,7 +718,8 @@ namespace gomind_backend_api.BL
                         { "p_min_age", request.MinAge },
                         { "p_max_age", request.MaxAge },
                         { "p_active", request.Active },
-                        { "p_notes", request.Notes }
+                        { "p_notes", request.Notes },
+                        { "p_key_result", request.KeyResult }
                     }  
                     );
 
@@ -750,6 +760,141 @@ namespace gomind_backend_api.BL
             {
                 return MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message));
             }
+        }
+        #endregion
+
+        #region Procesar archivo y analisis por parametros        
+        public async Task<List<AnalysisResult>> ProcesarArchivoJsonAsync(Stream jsonStream, string fileKey)
+        {
+            var resultados = new List<AnalysisResult>();
+
+            var parametros = await GetParametersFromJsonAsync(jsonStream);
+
+            foreach (var param in parametros)
+            {
+                await _dbConnection.ExecuteNonQueryAsync(
+                    "CALL api_set_parameter_results(@p_nombre, @p_key_result, @p_valor, @p_file_key);",
+                    new Dictionary<string, object>
+                    {
+                        { "p_nombre", param.Nombre },
+                        { "p_key_result", param.KeyResult },
+                        { "p_valor", param.Dato },
+                        { "p_file_key", fileKey }                  
+                    });    
+            }
+            resultados = await GetProcessedAnalysisResultsAsync(fileKey);
+
+            return resultados;
+        }
+        #endregion
+
+        #region Consultar analisis ya realizado por cada parametro
+        public async Task<List<AnalysisResult>> GetProcessedAnalysisResultsAsync(string fileKey)
+        {       
+
+            var spResults = await _dbConnection.ExecuteQueryAsync(
+                "CALL api_get_parameter_results(@p_file_key);",
+                reader => new SpParameterResult
+                {
+                    // Campos de la tabla PARAMETER_RESULTS
+                    parameter_result_id = reader.GetInt32("parameter_result_id"),                    
+                    file_key = reader.GetString("file_key"),
+                    value = reader.GetDecimal("value"),
+                    analysis_results = reader.IsDBNull("analysis_results") ? null : reader.GetString("analysis_results"),
+
+                    // Campos de la tabla REFERENCE_RANGE
+                    reference_range_id = reader.GetInt32("reference_range_id"),                 
+                    min_value = reader.IsDBNull("min_value") ? 0.00M : reader.GetDecimal("min_value"), 
+                    max_value = reader.IsDBNull("max_value") ? 0.00M : reader.GetDecimal("max_value"), 
+                    condition_type = reader.GetInt32("condition_type"),
+                    condition_value = reader.IsDBNull("condition_value") ? 0.00M : reader.GetDecimal("condition_value"), 
+                    reference_range_key_result = reader.GetString("reference_range_key_result"),
+                    condition_type_description = reader.GetString("condition_type_description"),
+
+                    // Campos de la tabla PARAMETER
+                    parameter_id = reader.GetInt32("parameter_id"),
+                    parameter_name = reader.GetString("parameter_name"),
+                    parameter_description = reader.GetString("parameter_description"),
+                    unit_of_measure = reader.GetString("unit_of_measure"),
+                    parameter_uuid = reader.IsDBNull("parameter_uuid") ? null : reader.GetGuid("parameter_uuid").ToString(),
+                },
+                new Dictionary<string, object>
+                {
+                    { "p_file_key", fileKey }
+                }
+            );
+
+            if (spResults == null || !spResults.Any())
+            {
+                return new List<AnalysisResult>();
+            }
+
+            var groupedResults = spResults
+                .GroupBy(r => r.parameter_id)
+                .Select(group =>
+                {
+                    var firstRow = group.First();
+
+                    return new AnalysisResult
+                    {
+                        Parameter = new ParametersAnalysis
+                        {
+                            Id = firstRow.parameter_id,
+                            Uuid = firstRow.parameter_uuid,
+                            Name = firstRow.parameter_name,
+                            Description = firstRow.parameter_description,
+                            UnitOfMeasure = firstRow.unit_of_measure
+                        },
+                        Analysis = new AnalysisDetails
+                        {
+                            Value = firstRow.value,
+                            ReferenceRanges = group.Select(item => new ReferenceRangeAnalysis
+                            {
+                                ConditionType = item.condition_type_description,
+                                ConditionValue = item.condition_value,
+                                MinValue = item.min_value,
+                                MaxValue = item.max_value,
+                                KeyResult = item.reference_range_key_result
+                            }).ToList(),
+                            Results = group.Select(item => new ResultDetail
+                            {
+                                Id = item.parameter_result_id,
+                                Recommendation = item.analysis_results
+                            }).ToList()
+                        }
+                    };
+                })
+                .ToList();
+
+            return groupedResults;
+        }
+        #endregion
+
+        #region Guardar Ai Recommendation
+        public async Task<MessageResponse> CreateUserRecommendationAsync(AnalysisRequest request, int userId)
+        {          
+            var recommendationData = await _dbConnection.ExecuteQueryAsync<AnalysisSaveResponse>(
+                "CALL api_insert_user_recommendation(@p_user_id, @p_result_id, @p_recommendation);",
+                reader => new AnalysisSaveResponse
+                {
+                    NewRecommendationId = reader.GetInt32("new_recommendation_id")
+                },
+                new Dictionary<string, object>
+                {
+                    { "p_user_id", userId },               
+                    { "p_result_id", request.ResultId },                
+                    { "p_recommendation", request.AiRecommendation }
+                }
+            );
+            if (recommendationData.FirstOrDefault().NewRecommendationId > 0 ) 
+            {
+                return MessageResponse.Create(CommonSuccess.GenericCreateSuccess1, true);
+            }
+            else 
+            {
+                return MessageResponse.Create(CommonErrors.GenericNoValid2);
+            }
+
         }
         #endregion
 
@@ -854,7 +999,107 @@ namespace gomind_backend_api.BL
             }
 
             return selectedItem;
+        }           
+        public async Task<List<ParameterPlane>> GetParametersFromJsonAsync(Stream jsonStream)
+        {
+            var parametros = new List<ParameterPlane>();
+
+            using var doc = await JsonDocument.ParseAsync(jsonStream);
+            var root = doc.RootElement;
+
+            // Verificamos si la raíz es un array
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var element in root.EnumerateArray())
+                {
+                    foreach (var item in element.EnumerateObject())
+                    {
+                        var value = item.Value;
+
+                        if (value.ValueKind == JsonValueKind.Object)
+                        {
+                            var hasSubParameters = value.EnumerateObject().Any(p =>
+                                p.Value.ValueKind == JsonValueKind.Object ||
+                                p.Value.ValueKind == JsonValueKind.String ||
+                                p.Value.ValueKind == JsonValueKind.Number
+                            );
+
+                            // Caso 1: agrupador con subparámetros
+                            if (hasSubParameters && value.EnumerateObject().All(p => p.Value.ValueKind == JsonValueKind.Object))
+                            {
+                                foreach (var subItem in value.EnumerateObject())
+                                {
+                                    var nombre = subItem.Name.ToLowerInvariant();
+                                    var subValue = subItem.Value;
+
+                                    if (subValue.ValueKind == JsonValueKind.Object)
+                                    {
+                                        foreach (var inner in subValue.EnumerateObject())
+                                        {
+                                            var keyResult = inner.Name.ToLowerInvariant();
+                                            if (keyResult == "unidad de medida") continue;
+
+                                            if (TryParseValor(inner.Value, out var valor))
+                                            {
+                                                parametros.Add(new ParameterPlane
+                                                {
+                                                    Nombre = nombre,
+                                                    KeyResult = keyResult,
+                                                    Dato = valor
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // Caso 2: parámetro directo
+                            else
+                            {
+                                var nombre = item.Name.ToLowerInvariant();
+                                foreach (var inner in value.EnumerateObject())
+                                {
+                                    var keyResult = inner.Name.ToLowerInvariant();
+                                    if (keyResult == "unidad de medida") continue;
+
+                                    if (TryParseValor(inner.Value, out var valor))
+                                    {
+                                        parametros.Add(new ParameterPlane
+                                        {
+                                            Nombre = nombre,
+                                            KeyResult = keyResult,
+                                            Dato = valor
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return parametros;
         }
+        private bool TryParseValor(JsonElement valorElement, out decimal valor)
+        {
+            valor = 0;
+
+            try
+            {
+                if (valorElement.ValueKind == JsonValueKind.Number)
+                {
+                    return valorElement.TryGetDecimal(out valor);
+                }
+                else if (valorElement.ValueKind == JsonValueKind.String)
+                {
+                    var str = valorElement.GetString()?.Replace(",", ".").Replace("%", "").Trim();
+                    return decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out valor);
+                }
+            }
+            catch { }
+
+            return false;
+        }
+
         #endregion
     }
 }

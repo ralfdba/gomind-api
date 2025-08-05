@@ -78,6 +78,42 @@ namespace gomind_backend_api.Controllers
         }
         #endregion
 
+        #region Obtener referencia de rango por Parameter ID
+        [HttpGet("parameter/{id}")]
+        public async Task<IActionResult> GetReferenceRangeByParameterId(int id)
+        {
+            #region Inicio Log Information
+            _logger.LogInformation("Request-ID: {id}", id);
+            #endregion
+
+            try
+            {
+                #region Validaciones iniciales
+
+                if (id <= 0)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.GenericNoValid1));
+                }
+
+                #endregion
+
+                #region BL Logic
+
+                var response = await _bl.GetReferenceRangeByParameterId(id);
+
+                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
+                return Ok(response);
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+            }
+        }
+        #endregion
+
         #region Crear referencia de rango 
         [HttpPost]
         public async Task<IActionResult> CreateReferenceRange([FromBody] ReferenceRangeRequest request)
@@ -99,9 +135,13 @@ namespace gomind_backend_api.Controllers
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.ReferenceRangeNoValid1));
                 }
+                if ((int)request.ConditionType == 1 && request.MinValue > request.MaxValue)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.ReferenceRangeNoValid1));
+                }
                 if ((int)request.ConditionType > 1 && request.ConditionValue == null)
                 {
-                    return BadRequest(MessageResponse.Create(CommonErrors.ReferenceRangeNoValid2));
+                    return BadRequest(MessageResponse.Create(CommonErrors.ReferenceRangeNoValid3));
                 }
 
                 #endregion

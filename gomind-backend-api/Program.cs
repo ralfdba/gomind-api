@@ -20,7 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 #region JWT
 // Cargar configuración de JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["Secret"];
+var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET");
 var issuer = jwtSettings["Issuer"];
 var audience = jwtSettings["Audience"];
 
@@ -175,6 +175,14 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.MapGet("/", () =>
+{
+    return Results.Ok(new
+    {
+        message = "Gomind API"
+    });
+});
+
 app.MapHealthChecks("/healthz");
 app.UseCors(builder => builder
  .AllowAnyOrigin()
@@ -189,3 +197,5 @@ app.MapControllers();
 
 app.Run();
 #endregion
+
+

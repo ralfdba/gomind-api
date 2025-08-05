@@ -29,7 +29,7 @@ namespace gomind_backend_api.Models.Dynamo
         public int file_type { get; set; }        
 
         [DynamoDBProperty]
-        public string status { get; set; }
+        public string job_status { get; set; }
         
         [DynamoDBProperty]
         public DateTime created_at { get; set; }
