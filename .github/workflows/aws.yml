@@ -19,11 +19,11 @@ jobs:
       AWS_ECS_SERVICE: ${{ vars.AWS_ECS_SERVICE }}
       AWS_ECR_REPOSITORY: ${{ vars.AWS_ECR_REPOSITORY }}
       IMAGE_TAG: "${{ vars.IMAGE_NAME }}"
+      BUILD_PATH: ${{ vars.BUILD_PATH }}
       ENV_ENVIRONMENT: ${{ vars.ENVIRONMENT}}
-      ENV_DB_USER: ${{ secrets.DB_USER }}
-      ENV_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      BUILD_PATH: "gomind-backend-api/"
-
+      ENV_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      ENV_MARIADB_CONNECTION: ${{ secrets.MARIADB_CONNECTION }}
+      
     permissions:
       id-token: write
       contents: read
@@ -46,9 +46,9 @@ jobs:
         docker build \
         --build-arg BUILD_PATH=$BUILD_PATH \
         --build-arg ENV_ENVIRONMENT=$ENV_ENVIRONMENT \
-        --build-arg ENV_DB_USER=$ENV_DB_USER \
-        --build-arg ENV_DB_PASSWORD=$ENV_DB_PASSWORD \
-        -t $AWS_ECR_REPOSITORY:$IMAGE_TAG-${{ github.run_number }} -f ./gomind-backend-api/Dockerfile .
+        --build-arg ENV_JWT_SECRET=$ENV_JWT_SECRET \
+        --build-arg ENV_MARIADB_CONNECTION=$ENV_MARIADB_CONNECTION \
+        -t $AWS_ECR_REPOSITORY:$IMAGE_TAG-${{ github.run_number }} -f ./${BUILD_PATH}Dockerfile .
         docker tag $AWS_ECR_REPOSITORY:$IMAGE_TAG-${{ github.run_number }} $AWS_ECR_REPOSITORY:$IMAGE_TAG-latest
 
     - name: Push Docker image to ECR
