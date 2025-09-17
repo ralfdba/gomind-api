@@ -62,5 +62,42 @@ namespace gomind_backend_api.Controllers
                 return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
             }
         }
+
+        [HttpGet("{company_id}/health-providers")]
+        public async Task<IActionResult> GetHealthProvidersByCompanyId(int company_id)
+        {
+            #region Inicio Log Information
+            _logger.LogInformation("Request-Company ID: {company_id}", company_id);
+            #endregion
+
+            try
+            {
+                #region Validaciones iniciales
+                if (company_id <= 0)
+                {
+                    return Ok(MessageResponse.Create(CommonErrors.GenericNoValid1));
+                }
+
+                #endregion
+
+                #region BL Logic
+                var data = await _bl.GetHealthProvidersByCompanyId(company_id);
+
+                var response = new CompanyHealthProviderInfo
+                {
+                    CompanyId = company_id,
+                    HealthProviders = data.ToArray()
+                };
+
+                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
+                return Ok(response);
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+            }
+        }
     }
 }

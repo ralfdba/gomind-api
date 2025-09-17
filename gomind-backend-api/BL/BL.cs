@@ -6,6 +6,7 @@ using gomind_backend_api.DB;
 using gomind_backend_api.Models.Appointments;
 using gomind_backend_api.Models.Errors;
 using gomind_backend_api.Models.Health;
+using gomind_backend_api.Models.HealthProvider;
 using gomind_backend_api.Models.Parameters;
 using gomind_backend_api.Models.Products;
 using gomind_backend_api.Models.ReferenceRange;
@@ -105,6 +106,30 @@ namespace gomind_backend_api.BL
                     Name = reader.GetString("name")
                 },
                 new Dictionary<string, object> 
+                {
+                    { "p_company_id", companyId }
+                }
+            );
+        }
+        #endregion
+
+        #region Obtener HealthProvidersByCompanyId
+        public async Task<IEnumerable<HealthProviderInfo>> GetHealthProvidersByCompanyId(int companyId)
+        {
+            return await _dbConnection.ExecuteQueryAsync<HealthProviderInfo>(
+                @"select
+                hp.id,
+                hp.name as health_provider_name
+                from
+                health_provider as hp 
+                left join health_provider_by_companies as hpc on hpc.health_provider_id = hp.id
+                where hpc.company_id = @p_company_id",
+                (reader) => new HealthProviderInfo
+                {
+                    HealthProviderId = reader.GetInt32("id"),
+                    Name = reader.GetString("health_provider_name")
+                },
+                new Dictionary<string, object>
                 {
                     { "p_company_id", companyId }
                 }
