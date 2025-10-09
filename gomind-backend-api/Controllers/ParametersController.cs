@@ -195,5 +195,42 @@ namespace gomind_backend_api.Controllers
             }
         }
         #endregion
+
+        #region Obtener Parameter Result por User ID
+        [HttpGet("{user_id}/results")]
+        public async Task<IActionResult> GetParametersResultByUser(int user_id, int? parameter_id)
+        {
+            #region Inicio Log Information
+            _logger.LogInformation("Request-User ID: {user_id}", user_id);
+            #endregion
+
+            try
+            {
+                #region Validaciones iniciales
+
+                if (user_id <= 0)
+                {
+                    return Ok(MessageResponse.Create(CommonErrors.GenericNoValid1));
+                }
+
+                #endregion
+
+                #region BL Logic                
+                var response = await _bl.GetParameterResults(user_id, parameter_id);
+
+                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
+                return Ok(response);
+
+                #endregion
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+            }
+
+        }
+        #endregion
     }
 }

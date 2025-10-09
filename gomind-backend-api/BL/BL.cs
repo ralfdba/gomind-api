@@ -789,7 +789,7 @@ namespace gomind_backend_api.BL
         #endregion
 
         #region Procesar archivo y analisis por parametros        
-        public async Task<List<AnalysisResult>> ProcesarArchivoJsonAsync(Stream jsonStream, string fileKey)
+        public async Task<List<AnalysisResult>> ProcesarArchivoJsonAsync(Stream jsonStream, string fileKey, int userId)
         {
             var resultados = new List<AnalysisResult>();
 
@@ -798,13 +798,14 @@ namespace gomind_backend_api.BL
             foreach (var param in parametros)
             {
                 await _dbConnection.ExecuteNonQueryAsync(
-                    "CALL api_set_parameter_results(@p_nombre, @p_key_result, @p_valor, @p_file_key);",
+                    "CALL api_set_parameter_results(@p_nombre, @p_key_result, @p_valor, @p_file_key, @p_user_id);",
                     new Dictionary<string, object>
                     {
                         { "p_nombre", param.Nombre },
                         { "p_key_result", param.KeyResult },
                         { "p_valor", param.Dato },
-                        { "p_file_key", fileKey }                  
+                        { "p_file_key", fileKey },
+                        { "p_user_id", userId }
                     });    
             }
             resultados = await GetProcessedAnalysisResultsAsync(fileKey);
@@ -920,6 +921,36 @@ namespace gomind_backend_api.BL
                 return MessageResponse.Create(CommonErrors.GenericNoValid2);
             }
 
+        }
+        #endregion
+
+        #region Obtener Parameters Results por User Id
+        public async Task<IEnumerable<ParameterResult>> GetParameterResults(int userId, int? parameterId)
+        {
+            int? paramToUse = parameterId > 0 ? parameterId : 0;
+
+            return await _dbConnection.ExecuteQueryAsync<ParameterResult>(
+                "CALL api_get_parameter_results_by_user_and_param(@p_user_id, @p_parameter_id)",
+                (reader) => new ParameterResult
+                {
+                    Id = reader.GetInt32("id"),
+                    FileKey = reader.IsDBNull(reader.GetOrdinal("file_key")) ? null : reader.GetString("file_key"),
+                    Value = reader.GetDecimal("value"),
+                    AnalysisResults = reader.IsDBNull(reader.GetOrdinal("analysis_results")) ? null : reader.GetString("analysis_results"),
+                    CreatedAt = reader.GetDateTime("created_at"),
+                    ReferenceRangeId = reader.GetInt32("reference_range_id"),
+                    UserId = reader.GetInt32("user_id"),
+                    ParameterId = reader.GetInt32("parameter_id"),
+                    ReferenceRangeMin = reader.IsDBNull(reader.GetOrdinal("reference_range_min")) ? null : reader.GetString("reference_range_min"),
+                    ReferenceRangeMax = reader.IsDBNull(reader.GetOrdinal("reference_range_max")) ? null : reader.GetString("reference_range_max")
+                },
+                new Dictionary<string, object>
+                {
+                    { "p_user_id", userId },            
+                    { "p_parameter_id", paramToUse }
+                }
+            );
+           
         }
         #endregion
 
@@ -1126,5 +1157,7 @@ namespace gomind_backend_api.BL
         }
 
         #endregion
+
+
     }
 }

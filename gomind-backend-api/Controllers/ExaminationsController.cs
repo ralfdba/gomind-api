@@ -217,7 +217,7 @@ namespace gomind_backend_api.Controllers
                 if (getDataProcessed == null || getDataProcessed.Count <= 0) 
                 {
                     var stream = await _s3Service.GetFileAsync(bucketName, "results-ok", job_id);
-                    response = await _bl.ProcesarArchivoJsonAsync(stream, job.key_result);
+                    response = await _bl.ProcesarArchivoJsonAsync(stream, job.key_result, job.user_id);
                 }
                 else
                 {

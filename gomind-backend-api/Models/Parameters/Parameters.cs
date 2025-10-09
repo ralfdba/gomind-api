@@ -139,5 +139,39 @@ namespace gomind_backend_api.Models.Parameters
 
     #endregion
 
+    #region Parameters Result 
+    public class ParameterResult
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("file_key")]
+        public string FileKey { get; set; }
+
+        [JsonPropertyName("value")]
+        public Decimal Value { get; set; }
+
+        [JsonPropertyName("analysis_results")]
+        public string? AnalysisResults { get; set; }
+
+        [JsonPropertyName("created_at")]
+        public DateTime CreatedAt { get; set; }
+
+        [JsonPropertyName("reference_range_id")]
+        public int ReferenceRangeId { get; set; }
+
+        [JsonPropertyName("user_id")]
+        public int UserId { get; set; }
+
+        [JsonPropertyName("parameter_id")]
+        public int ParameterId { get; set; }
+
+        [JsonPropertyName("reference_range_min")]
+        public string? ReferenceRangeMin { get; set; }
+
+        [JsonPropertyName("reference_range_max")]
+        public string? ReferenceRangeMax { get; set; }
+    }
+    #endregion
 
 }
