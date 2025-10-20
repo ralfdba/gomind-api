@@ -74,7 +74,7 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Obtener appointments por userId
-        [HttpGet("{userId}")]
+        [HttpGet("{userId}/search")]
         public async Task<IActionResult> GetAppointmentsByUserId(int userId)
         {
             #region Inicio Log Information
