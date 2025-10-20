@@ -74,18 +74,18 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Obtener appointments por userId
-        [HttpGet("{userId}/search")]
-        public async Task<IActionResult> GetAppointmentsByUserId(int userId)
+        [HttpGet("{user_id}/search")]
+        public async Task<IActionResult> GetAppointmentsByUserId(int user_id)
         {
             #region Inicio Log Information
-            _logger.LogInformation("Request-ID: {id}", userId);
+            _logger.LogInformation("Request-ID: {id}", user_id);
             #endregion
 
             try
             {
                 #region Validaciones iniciales
 
-                if (userId <= 0)
+                if (user_id <= 0)
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.GenericNoValid1));
                 }
@@ -94,7 +94,7 @@ namespace gomind_backend_api.Controllers
 
                 #region BL Logic
 
-                var response = await _bl.GetAppointmentsByUser(userId);
+                var response = await _bl.GetAppointmentsByUser(user_id);
 
                 _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
                 return Ok(response);
