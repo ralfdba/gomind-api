@@ -159,6 +159,26 @@ namespace gomind_backend_api.BL
         }
         #endregion
 
+        #region Obtener citas del usuario
+        public async Task<IEnumerable<AppointmentsByUser>> GetAppointmentsByUser(int userId)
+        {
+            return await _dbConnection.ExecuteQueryAsync<AppointmentsByUser>(
+                "CALL api_get_appointments_by_user(@p_user_id)",
+                (reader) => new AppointmentsByUser
+                {
+                     AppointmentId = reader.GetInt32("id"),
+                     ScheduleDay = reader.GetDateTime("schedule_day"),
+                     HealthProvider = reader.GetString("health_provider"),
+                     Product = reader.GetString("product")
+                },
+                new Dictionary<string, object>
+                {
+                    { "p_user_id", userId }
+                }
+            );
+        }
+        #endregion
+
         #region Guardar Perfil Integral de Salud
         public async Task<MessageResponse> CreateHealthProfile(Health.HealthProfileRequest request)
         {         

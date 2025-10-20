@@ -25,5 +25,20 @@ namespace gomind_backend_api.Models.Appointments
             public int AppointmentId { get; set; }
 
         }
+        public class AppointmentsByUser
+        {
+            [JsonPropertyName("id")]
+            public int AppointmentId { get; set; }
+
+            [JsonPropertyName("schedule_day")]
+            public DateTime ScheduleDay { get; set; }
+
+            [JsonPropertyName("health_provider")]
+            public string? HealthProvider { get; set; }
+
+            [JsonPropertyName("product")]
+            public string? Product { get; set; }
+
+        }
     }
 }

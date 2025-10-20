@@ -22,7 +22,7 @@ namespace gomind_backend_api.Controllers
             _logger = logger;
             _bl = businessLogic;
         }
-
+        #region Crear appointment por user
         [HttpPost] 
         public async Task<IActionResult> CreateAppointment([FromBody] Appointments.AppointmentsRequest request)
         {
@@ -71,5 +71,42 @@ namespace gomind_backend_api.Controllers
                 return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
             }
         }
+        #endregion
+
+        #region Obtener appointments por userId
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> GetAppointmentsByUserId(int userId)
+        {
+            #region Inicio Log Information
+            _logger.LogInformation("Request-ID: {id}", userId);
+            #endregion
+
+            try
+            {
+                #region Validaciones iniciales
+
+                if (userId <= 0)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.GenericNoValid1));
+                }
+
+                #endregion
+
+                #region BL Logic
+
+                var response = await _bl.GetAppointmentsByUser(userId);
+
+                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
+                return Ok(response);
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+            }
+        }
+        #endregion
     }
 }
