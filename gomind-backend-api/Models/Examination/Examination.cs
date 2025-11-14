@@ -7,10 +7,7 @@ namespace gomind_backend_api.Models.Examination
     public class Examination
     {
         public class ExaminationRequest
-        {
-            [FromForm(Name = "user_id")]
-            public int UserId { get; set; }
-
+        {     
             [FromForm(Name = "file_type")]
             [Range (1,2)]
             public int FileType { get; set; }

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using System.Security.Claims;
 using System.Text.Json;
+using static gomind_backend_api.Models.Examination.Examination;
 
 namespace gomind_backend_api.Controllers
 {
@@ -42,11 +43,13 @@ namespace gomind_backend_api.Controllers
         #region Subir Examen Médico 
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadExamination([FromForm] Examination.ExaminationRequest request)
+        public async Task<ActionResult<ExaminationResponse>> UploadExamination([FromForm] ExaminationRequest request)
         {
             #region Inicio Log Information
+            //Se obtiene el UserId del token
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");            
             var serializedRequest = JsonSerializer.Serialize(request);
-            _logger.LogInformation("Request: {RequestJson}", serializedRequest);
+            _logger.LogInformation("Request: {RequestJson}, UserId: {UserId}", serializedRequest, userId);
             #endregion
 
             try
@@ -58,7 +61,7 @@ namespace gomind_backend_api.Controllers
                     return BadRequest(MessageResponse.Create(CommonErrors.BadRequest1));
                 }
 
-                if (request.UserId <= 0)
+                if (userId <= 0)
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
                 }
@@ -80,7 +83,7 @@ namespace gomind_backend_api.Controllers
                 var key = await _s3Service.UploadFileAsync(request.File, bucketName, $"raw/{request.FileType}", jobId);
                 string fileUrl = $"{baseUrlName}{bucketName}/{key}";
 
-                var response = new Examination.ExaminationResponse
+                var response = new ExaminationResponse
                 {
                     JobId = jobId,
                     FileUrl = fileUrl
@@ -93,7 +96,7 @@ namespace gomind_backend_api.Controllers
                 {
                     id = jobId,
                     file_type = request.FileType,
-                    user_id = request.UserId,                     
+                    user_id = userId,                     
                     created_at = DateTime.Now,                     
                     updated_at = DateTime.Now,                       
                     job_status = JobStatus.Pending,
@@ -177,7 +180,7 @@ namespace gomind_backend_api.Controllers
         
         #region Consultar Análisis IA 
         [HttpGet("analysis-job/{job_id}")]
-        public async Task<IActionResult> GetAnalysisIa(string job_id)
+        public async Task<ActionResult<List<AnalysisResult>>> GetAnalysisIa(string job_id)
         {
             #region Inicio Log Information
             _logger.LogInformation("Request-Job ID: {job_id}", job_id);
@@ -238,7 +241,7 @@ namespace gomind_backend_api.Controllers
 
         #region Guardar Análisis IA 
         [HttpPost("analysis")]
-        public async Task<IActionResult> SaveAnalysis([FromBody] Examination.AnalysisRequest request)
+        public async Task<ActionResult<MessageResponse>> SaveAnalysis([FromBody] AnalysisRequest request)
         {
             #region Inicio Log Information
             var serializedRequest = JsonSerializer.Serialize(request);

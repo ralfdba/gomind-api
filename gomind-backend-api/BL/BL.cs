@@ -138,7 +138,7 @@ namespace gomind_backend_api.BL
         #endregion
 
         #region Agendar cita a usuario
-        public async Task<AppointmentsResponse> CreateAppointmentByUser(AppointmentsRequest request)
+        public async Task<AppointmentsResponse> CreateAppointmentByUser(AppointmentsRequest request, int userId)
         {
            
             var appointmentData = await _dbConnection.ExecuteQueryAsync<AppointmentsResponse>(               
@@ -149,7 +149,7 @@ namespace gomind_backend_api.BL
                 },
                 new Dictionary<string, object>              
                 {
-                    { "p_users_id", request.UserId },
+                    { "p_users_id", userId },
                     { "p_schedule_day", request.DateTime },
                     { "p_health_provider_id", request.HealthProviderId },
                     { "p_product_id", request.ProductId }

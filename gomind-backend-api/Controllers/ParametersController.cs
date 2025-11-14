@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
-using gomind_backend_api.Models.Parameters;
-
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Authorization;
+﻿using Amazon.Runtime.Internal;
 using gomind_backend_api.Models.Errors;
-using Amazon.Runtime.Internal;
+using gomind_backend_api.Models.Parameters;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using System.DirectoryServices.Protocols;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace gomind_backend_api.Controllers
@@ -26,7 +26,7 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener todos los parametros
         [HttpGet]
-        public async Task<IActionResult> GetAllParameters()
+        public async Task<ActionResult<Parameters>> GetAllParameters()
         {  
             try
             {
@@ -47,7 +47,7 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener parametros por ID
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetParameterById(int id)
+        public async Task<ActionResult<Parameters>> GetParameterById(int id)
         {
             #region Inicio Log Information
             _logger.LogInformation("Request-ID: {id}", id);
@@ -83,7 +83,7 @@ namespace gomind_backend_api.Controllers
 
         #region Crear un nuevo parametro
         [HttpPost]
-        public async Task <IActionResult> CreateParameter([FromBody] ParameterRequest request)
+        public async Task <ActionResult<MessageResponse>> CreateParameter([FromBody] ParameterRequest request)
         {
             #region Inicio Log Information
             var serializedRequest = JsonSerializer.Serialize(request);
@@ -120,7 +120,7 @@ namespace gomind_backend_api.Controllers
         #region Modificar un parametro
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateParameter(int id, [FromBody] ParameterRequest request)
+        public async Task<ActionResult<MessageResponse>> UpdateParameter(int id, [FromBody] ParameterRequest request)
         {
             #region Inicio Log Information
             var serializedRequest = JsonSerializer.Serialize(request);
@@ -162,7 +162,7 @@ namespace gomind_backend_api.Controllers
         #region Eliminar un parametro
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteParameter(int id)
+        public async Task<ActionResult<MessageResponse>> DeleteParameter(int id)
         {
 
             #region Inicio Log Information
@@ -197,18 +197,20 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Obtener Parameter Result por User ID
-        [HttpGet("{user_id}/results")]
-        public async Task<IActionResult> GetParametersResultByUser(int user_id, int? parameter_id)
+        [HttpGet("results-user")]
+        public async Task<IActionResult> GetParametersResultByUser(int? parameter_id)
         {
             #region Inicio Log Information
-            _logger.LogInformation("Request-User ID: {user_id}", user_id);
+            //Se obtiene el UserId del token
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            _logger.LogInformation("Request-User ID: {user_id}", userId);
             #endregion
 
             try
             {
                 #region Validaciones iniciales
 
-                if (user_id <= 0)
+                if (userId <= 0)
                 {
                     return Ok(MessageResponse.Create(CommonErrors.GenericNoValid1));
                 }
@@ -216,7 +218,7 @@ namespace gomind_backend_api.Controllers
                 #endregion
 
                 #region BL Logic                
-                var response = await _bl.GetParameterResults(user_id, parameter_id);
+                var response = await _bl.GetParameterResults(userId, parameter_id);
 
                 _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
                 return Ok(response);

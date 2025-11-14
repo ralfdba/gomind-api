@@ -1,10 +1,11 @@
-﻿using gomind_backend_api.Models.Company;
-using gomind_backend_api.Models.Login;
-using gomind_backend_api.Models.Errors;
-using Microsoft.AspNetCore.Mvc;
+﻿using gomind_backend_api.AWS;
 using gomind_backend_api.JWT;
-using gomind_backend_api.AWS;
+using gomind_backend_api.Models.Company;
+using gomind_backend_api.Models.Errors;
+using gomind_backend_api.Models.Login;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using static gomind_backend_api.Models.Login.Login;
 
 
 namespace gomind_backend_api.Controllers
@@ -25,7 +26,7 @@ namespace gomind_backend_api.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] Login.LoginRequest request)
+        public async Task<ActionResult<LoginResponse>> Login([FromBody] Login.LoginRequest request)
         {
             try
             {      
@@ -50,7 +51,7 @@ namespace gomind_backend_api.Controllers
                 // Generar el token JWT
                 var token = _jwtService.GenerateToken(dataUser.UserId.ToString());
 
-                var response = new Login.LoginResponse
+                var response = new LoginResponse
                 {
                     Token = token,
                     User = dataUser,

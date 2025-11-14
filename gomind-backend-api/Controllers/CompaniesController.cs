@@ -26,8 +26,10 @@ namespace gomind_backend_api.Controllers
             _bl = businessLogic;
         }
 
+        #region Se obtienen los productos por company id
+
         [HttpGet("{company_id}/products")]        
-        public async Task <IActionResult> GetProductsByCompanyId(int company_id)
+        public async Task <ActionResult<CompanyInfo>> GetProductsByCompanyId(int company_id)
         {
             #region Inicio Log Information
             _logger.LogInformation("Request-Company ID: {company_id}", company_id);
@@ -62,9 +64,13 @@ namespace gomind_backend_api.Controllers
                 return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
             }
         }
+        #endregion
+
+        #region Se obtienen los health providers por company id
 
         [HttpGet("{company_id}/health-providers")]
-        public async Task<IActionResult> GetHealthProvidersByCompanyId(int company_id)
+
+        public async Task<ActionResult<CompanyHealthProviderInfo>> GetHealthProvidersByCompanyId(int company_id)
         {
             #region Inicio Log Information
             _logger.LogInformation("Request-Company ID: {company_id}", company_id);
@@ -99,5 +105,6 @@ namespace gomind_backend_api.Controllers
                 return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
             }
         }
+        #endregion
     }
 }

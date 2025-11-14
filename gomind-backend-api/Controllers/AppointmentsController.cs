@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Text.Json;
+using static gomind_backend_api.Models.Appointments.Appointments;
 
 namespace gomind_backend_api.Controllers
 {
@@ -24,11 +25,12 @@ namespace gomind_backend_api.Controllers
         }
         #region Crear appointment por user
         [HttpPost] 
-        public async Task<IActionResult> CreateAppointment([FromBody] Appointments.AppointmentsRequest request)
+        public async Task<ActionResult<AppointmentsResponse>> CreateAppointment([FromBody] AppointmentsRequest request)
         {
             #region Inicio Log Information
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var serializedRequest = JsonSerializer.Serialize(request);
-            _logger.LogInformation("Request: {RequestJson}", serializedRequest);
+            _logger.LogInformation("Request: {RequestJson}, UserId: {UserId}", serializedRequest, userId);
             #endregion
 
             try
@@ -40,7 +42,7 @@ namespace gomind_backend_api.Controllers
                     return BadRequest(MessageResponse.Create(CommonErrors.BadRequest1));
                 }
 
-                if (request.UserId <= 0)
+                if (userId <= 0)
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
                 }
@@ -58,7 +60,7 @@ namespace gomind_backend_api.Controllers
 
                 #region BL Logic
 
-                var response = await _bl.CreateAppointmentByUser(request);
+                var response = await _bl.CreateAppointmentByUser(request, userId);
                 _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
                 return Ok(response);  
                 
@@ -74,18 +76,20 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Obtener appointments por userId
-        [HttpGet("{user_id}/search")]
-        public async Task<IActionResult> GetAppointmentsByUserId(int user_id)
+        [HttpGet("search")]
+        public async Task<ActionResult<AppointmentsByUser>> GetAppointmentsByUserId()
         {
             #region Inicio Log Information
-            _logger.LogInformation("Request-ID: {id}", user_id);
+            //Se obtiene el UserId del token
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            _logger.LogInformation("Request-ID: {id}", userId);
             #endregion
 
             try
             {
                 #region Validaciones iniciales
 
-                if (user_id <= 0)
+                if (userId <= 0)
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.GenericNoValid1));
                 }
@@ -94,7 +98,7 @@ namespace gomind_backend_api.Controllers
 
                 #region BL Logic
 
-                var response = await _bl.GetAppointmentsByUser(user_id);
+                var response = await _bl.GetAppointmentsByUser(userId);
 
                 _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
                 return Ok(response);

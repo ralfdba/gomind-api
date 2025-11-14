@@ -5,10 +5,7 @@ namespace gomind_backend_api.Models.Appointments
     public class Appointments
     {
         public class AppointmentsRequest
-        {
-            [JsonPropertyName("user_id")]
-            public int UserId { get; set; }
-
+        {      
             [JsonPropertyName("product_id")]
             public int ProductId { get; set; }
 

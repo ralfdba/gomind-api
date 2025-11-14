@@ -23,7 +23,7 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener todas las referencia de rango
         [HttpGet]
-        public async Task<IActionResult> GetAllReferenceRanges()
+        public async Task<ActionResult<ReferenceRange>> GetAllReferenceRanges()
         {
             try
             {
@@ -44,7 +44,7 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener referencia de rango por ID
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetReferenceRangeById(int id)
+        public async Task<ActionResult<ReferenceRange>> GetReferenceRangeById(int id)
         {
             #region Inicio Log Information
             _logger.LogInformation("Request-ID: {id}", id);
@@ -80,7 +80,7 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener referencia de rango por Parameter ID
         [HttpGet("parameter/{id}")]
-        public async Task<IActionResult> GetReferenceRangeByParameterId(int id)
+        public async Task<ActionResult<IEnumerable<ReferenceRange>>> GetReferenceRangeByParameterId(int id)
         {
             #region Inicio Log Information
             _logger.LogInformation("Request-ID: {id}", id);
@@ -116,7 +116,7 @@ namespace gomind_backend_api.Controllers
 
         #region Crear referencia de rango 
         [HttpPost]
-        public async Task<IActionResult> CreateReferenceRange([FromBody] ReferenceRangeRequest request)
+        public async Task<ActionResult<MessageResponse>> CreateReferenceRange([FromBody] ReferenceRangeRequest request)
         {
             #region Inicio Log Information
             var serializedRequest = JsonSerializer.Serialize(request);
@@ -165,7 +165,7 @@ namespace gomind_backend_api.Controllers
 
         #region Modificar referencia de rango
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateReferenceRange(int id, [FromBody] ReferenceRangeRequest request)
+        public async Task<ActionResult<MessageResponse>> UpdateReferenceRange(int id, [FromBody] ReferenceRangeRequest request)
         {
             #region Inicio Log Information
             var serializedRequest = JsonSerializer.Serialize(request);
@@ -205,7 +205,7 @@ namespace gomind_backend_api.Controllers
 
         #region Eliminar referencia de rango
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReferenceRange(int id)
+        public async Task<ActionResult<MessageResponse>> DeleteReferenceRange(int id)
         {
             #region Inicio Log Information
             _logger.LogInformation("Request-ID: {id}", id);

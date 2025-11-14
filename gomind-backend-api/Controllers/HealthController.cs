@@ -5,7 +5,9 @@ using gomind_backend_api.Models.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using System.Text.Json;
+using static gomind_backend_api.Models.Health.Health;
 
 namespace gomind_backend_api.Controllers
 {
@@ -25,7 +27,7 @@ namespace gomind_backend_api.Controllers
 
         #region Guardar Perfil Integral de Salud 
         [HttpPost("profile")]
-        public async Task<IActionResult> SubmitHealthProfile([FromBody] Health.HealthProfileRequest request)
+        public async Task<ActionResult<MessageResponse>> SubmitHealthProfile([FromBody] HealthProfileRequest request)
         {
             #region Inicio Log Information
             var serializedRequest = JsonSerializer.Serialize(request);
@@ -63,18 +65,20 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Obtener Evaluación de Salud 
-        [HttpGet("evaluation/{user_id}")]
-        public async Task<IActionResult> GetHealthEvaluation(int user_id)
+        [HttpGet("evaluation")]
+        public async Task<ActionResult<HealthEvaluationResponse>> GetHealthEvaluation()
         {
             #region Inicio Log Information
-            _logger.LogInformation("Request-User ID: {user_id}", user_id);
+            //Se obtiene el UserId del token
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            _logger.LogInformation("Request-User ID: {user_id}", userId);
             #endregion
 
             try
             {
                 #region Validaciones iniciales
 
-                if (user_id <= 0 )
+                if (userId <= 0 )
                 {
                     return Ok(MessageResponse.Create(CommonErrors.GenericNoValid1));
                 }
@@ -83,7 +87,7 @@ namespace gomind_backend_api.Controllers
 
                 #region BL Logic
 
-                var response = await _bl.GetUserHealthEvaluation(user_id);
+                var response = await _bl.GetUserHealthEvaluation(userId);
 
                 _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
                 return Ok(response);
