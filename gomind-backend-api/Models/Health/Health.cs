@@ -8,11 +8,7 @@ namespace gomind_backend_api.Models.Health
     public class Health
     {
         public class HealthProfileRequest
-        {
-            [Required]
-            [JsonPropertyName("user_id")]
-            public int UserId { get; set; }
-            
+        {     
             [JsonPropertyName("physical")]
             public PhysicalData? Physical { get; set; }
 

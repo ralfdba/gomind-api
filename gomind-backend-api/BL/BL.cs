@@ -180,13 +180,11 @@ namespace gomind_backend_api.BL
         #endregion
 
         #region Guardar Perfil Integral de Salud
-        public async Task<MessageResponse> CreateHealthProfile(Health.HealthProfileRequest request)
+        public async Task<MessageResponse> CreateHealthProfile(HealthProfileRequest request, int userId)
         {         
             try
             {
                 // Inicia la transacción
-                // TransactionScope es ideal para coordinar múltiples operaciones de DB
-                // en una sola transacción, incluyendo transacciones distribuidas (MSDTC si es necesario).
                 using (var scope = new TransactionScope(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
                 {
                     if (request.Physical != null) {
@@ -195,7 +193,7 @@ namespace gomind_backend_api.BL
                             "CALL api_insert_users_health_phisically(@p_user_id, @q1, @q2, @q3, @q4, @q5, @q6, @q7, @q8, @q9, @q10)",
                             new Dictionary<string, object>
                             {
-                            { "p_user_id", request.UserId },
+                            { "p_user_id", userId },
                             { "q1", request.Physical.q1 },
                             { "q2", request.Physical.q2 },
                             { "q3", request.Physical.q3 },
@@ -217,7 +215,7 @@ namespace gomind_backend_api.BL
                         "CALL api_insert_users_health_emotional(@p_user_id, @q1, @q2, @q3, @q4, @q5, @q6, @q7, @q8, @q9, @q10)",
                         new Dictionary<string, object>
                         {
-                            { "p_user_id", request.UserId },
+                            { "p_user_id", userId },
                             { "q1", request.Emotional.q1 },
                             { "q2", request.Emotional.q2 },
                             { "q3", request.Emotional.q3 },
@@ -238,7 +236,7 @@ namespace gomind_backend_api.BL
                         "CALL api_insert_users_health_finance(@p_user_id, @q1, @q2, @q3, @q4, @q5, @q6, @q7, @q8, @q9, @q10)",
                         new Dictionary<string, object>
                         {
-                            { "p_user_id", request.UserId },
+                            { "p_user_id", userId },
                             { "q1", request.Finance.q1 },
                             { "q2", request.Finance.q2 },
                             { "q3", request.Finance.q3 },
@@ -260,7 +258,7 @@ namespace gomind_backend_api.BL
                         "CALL api_insert_users_health_goldberg(@p_user_id, @q1, @q2, @q3, @q4, @q5, @q6, @q7, @q8, @q9, @q10, @q11, @q12, @q13)",
                         new Dictionary<string, object>
                         {
-                            { "p_user_id", request.UserId },
+                            { "p_user_id", userId },
                             { "q1", request.Goldberg.q1 },
                             { "q2", request.Goldberg.q2 },
                             { "q3", request.Goldberg.q3 },

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.DirectoryServices.Protocols;
 using System.Security.Claims;
 using System.Text.Json;
@@ -26,6 +27,11 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener todos los parametros
         [HttpGet]
+        [SwaggerOperation(
+            Summary = "Obtener todos los parametros",
+            Description = "Permite obtener todos los parametros.",
+            Tags = new[] { "Parameters" }
+        )]
         public async Task<ActionResult<Parameters>> GetAllParameters()
         {  
             try
@@ -47,6 +53,11 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener parametros por ID
         [HttpGet("{id}")]
+        [SwaggerOperation(
+            Summary = "Obtener parametro por su ID",
+            Description = "Permite obtener un parametro por su ID.",
+            Tags = new[] { "Parameters" }
+        )]
         public async Task<ActionResult<Parameters>> GetParameterById(int id)
         {
             #region Inicio Log Information
@@ -83,6 +94,11 @@ namespace gomind_backend_api.Controllers
 
         #region Crear un nuevo parametro
         [HttpPost]
+        [SwaggerOperation(
+            Summary = "Crear un nuevo parametro",
+            Description = "Permite crear un nuevo parametro.",
+            Tags = new[] { "Parameters" }
+        )]
         public async Task <ActionResult<MessageResponse>> CreateParameter([FromBody] ParameterRequest request)
         {
             #region Inicio Log Information
@@ -120,6 +136,11 @@ namespace gomind_backend_api.Controllers
         #region Modificar un parametro
 
         [HttpPut("{id}")]
+        [SwaggerOperation(
+            Summary = "Modificar un parametro",
+            Description = "Permite modificar un parametro.",
+            Tags = new[] { "Parameters" }
+        )]
         public async Task<ActionResult<MessageResponse>> UpdateParameter(int id, [FromBody] ParameterRequest request)
         {
             #region Inicio Log Information
@@ -162,6 +183,11 @@ namespace gomind_backend_api.Controllers
         #region Eliminar un parametro
 
         [HttpDelete("{id}")]
+        [SwaggerOperation(
+            Summary = "Eliminar un parametro",
+            Description = "Permite eliminar un parametro.",
+            Tags = new[] { "Parameters" }
+        )]
         public async Task<ActionResult<MessageResponse>> DeleteParameter(int id)
         {
 
@@ -198,6 +224,11 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener Parameter Result por User ID
         [HttpGet("results-user")]
+        [SwaggerOperation(
+            Summary = "Obtener los resultados de los parametros por usuario",
+            Description = "Permite obtener los resultados de los parametros guardados por el usuario en sesión.",
+            Tags = new[] { "Parameters" }
+        )]
         public async Task<IActionResult> GetParametersResultByUser(int? parameter_id)
         {
             #region Inicio Log Information

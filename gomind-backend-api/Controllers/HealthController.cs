@@ -1,10 +1,7 @@
-﻿using gomind_backend_api.BL;
-using gomind_backend_api.Models.Errors;
-using gomind_backend_api.Models.Health;
-using gomind_backend_api.Models.Utils;
+﻿using gomind_backend_api.Models.Errors;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 using System.Text.Json;
 using static gomind_backend_api.Models.Health.Health;
@@ -27,11 +24,17 @@ namespace gomind_backend_api.Controllers
 
         #region Guardar Perfil Integral de Salud 
         [HttpPost("profile")]
+        [SwaggerOperation(
+            Summary = "Guardar el perfil de salud del usuario en sesión",
+            Description = "Permite guardar el perfil de salud del usuario en sesión.",
+            Tags = new[] { "Health" }
+        )]
         public async Task<ActionResult<MessageResponse>> SubmitHealthProfile([FromBody] HealthProfileRequest request)
         {
             #region Inicio Log Information
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");            
             var serializedRequest = JsonSerializer.Serialize(request);
-            _logger.LogInformation("Request: {RequestJson}", serializedRequest);
+            _logger.LogInformation("Request: {RequestJson}, UserId: {UserId}", serializedRequest, userId);
             #endregion
 
             try
@@ -41,7 +44,7 @@ namespace gomind_backend_api.Controllers
                 if (!ModelState.IsValid) {
                     return BadRequest(CommonErrors.BadRequest1);
                 }                
-                if (request.UserId <= 0)
+                if (userId <= 0)
                 {
                     return Ok(MessageResponse.Create(CommonErrors.UserIdNoValid));
                 }
@@ -49,7 +52,7 @@ namespace gomind_backend_api.Controllers
 
                 #region BL Logic
 
-                var response = await _bl.CreateHealthProfile(request);
+                var response = await _bl.CreateHealthProfile(request, userId);
 
                 _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
                 return Ok(response);
@@ -66,10 +69,14 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener Evaluación de Salud 
         [HttpGet("evaluation")]
+        [SwaggerOperation(
+            Summary = "Obtener el perfil de salud del usuario en sesión",
+            Description = "Permite obtener el perfil de salud del usuario en sesión.",
+            Tags = new[] { "Health" }
+        )]
         public async Task<ActionResult<HealthEvaluationResponse>> GetHealthEvaluation()
         {
-            #region Inicio Log Information
-            //Se obtiene el UserId del token
+            #region Inicio Log Information            
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             _logger.LogInformation("Request-User ID: {user_id}", userId);
             #endregion

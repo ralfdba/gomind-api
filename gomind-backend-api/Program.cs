@@ -143,8 +143,7 @@ builder.Services.AddSwaggerGen(options =>
         BearerFormat = "JWT",
         Scheme = "Bearer"
     });
-
-    // PERO Swagger solo APLICA el requisito a los endpoints que tienen [Authorize].
+    options.EnableAnnotations();
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {

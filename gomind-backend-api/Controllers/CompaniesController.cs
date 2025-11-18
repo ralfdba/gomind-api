@@ -6,6 +6,7 @@ using gomind_backend_api.Models.Products;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Data;
 using System.Security.Claims;
 using System.Text.Json;
@@ -27,8 +28,12 @@ namespace gomind_backend_api.Controllers
         }
 
         #region Se obtienen los productos por company id
-
-        [HttpGet("{company_id}/products")]        
+        [HttpGet("{company_id}/products")]
+        [SwaggerOperation(
+            Summary = "Obtener los productos a traves del ID de la empresa",
+            Description = "Permite obtener los productos asociados a la empresa indicada.",
+            Tags = new[] { "Companies" }
+        )]
         public async Task <ActionResult<CompanyInfo>> GetProductsByCompanyId(int company_id)
         {
             #region Inicio Log Information
@@ -67,9 +72,12 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Se obtienen los health providers por company id
-
         [HttpGet("{company_id}/health-providers")]
-
+        [SwaggerOperation(
+            Summary = "Obtener los proveedores de salud a traves del ID de la empresa",
+            Description = "Permite obtener los proveedores de salud asociados a la empresa indicada.",
+            Tags = new[] { "Companies" }
+        )]
         public async Task<ActionResult<CompanyHealthProviderInfo>> GetHealthProvidersByCompanyId(int company_id)
         {
             #region Inicio Log Information

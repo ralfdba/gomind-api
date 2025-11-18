@@ -1,9 +1,7 @@
-﻿using gomind_backend_api.JWT;
-using gomind_backend_api.Models.Appointments;
-using gomind_backend_api.Models.Errors;
+﻿using gomind_backend_api.Models.Errors;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 using System.Text.Json;
 using static gomind_backend_api.Models.Appointments.Appointments;
@@ -24,7 +22,12 @@ namespace gomind_backend_api.Controllers
             _bl = businessLogic;
         }
         #region Crear appointment por user
-        [HttpPost] 
+        [HttpPost]
+        [SwaggerOperation(
+            Summary = "Crear cita médica al usuario",
+            Description = "Permite crear una cita médica al usuario en sesión.",
+            Tags = new[] { "Appointments" }
+        )]
         public async Task<ActionResult<AppointmentsResponse>> CreateAppointment([FromBody] AppointmentsRequest request)
         {
             #region Inicio Log Information
@@ -77,6 +80,11 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener appointments por userId
         [HttpGet("search")]
+        [SwaggerOperation(
+            Summary = "Obtener citas médicas del usuario",
+            Description = "Permite obtener las citas médicas del usuario en sesión.",
+            Tags = new[] { "Appointments" }
+        )]
         public async Task<ActionResult<AppointmentsByUser>> GetAppointmentsByUserId()
         {
             #region Inicio Log Information

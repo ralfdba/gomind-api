@@ -1,10 +1,9 @@
-﻿using gomind_backend_api.AWS;
-using gomind_backend_api.JWT;
+﻿using gomind_backend_api.JWT;
 using gomind_backend_api.Models.Company;
 using gomind_backend_api.Models.Errors;
 using gomind_backend_api.Models.Login;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+using Swashbuckle.AspNetCore.Annotations;
 using static gomind_backend_api.Models.Login.Login;
 
 
@@ -25,7 +24,13 @@ namespace gomind_backend_api.Controllers
             _jwtService = jwtService;
         }
 
+        #region Login
         [HttpPost("login")]
+        [SwaggerOperation(
+            Summary = "Autenticación del usuario",
+            Description = "Permite autenticar al usuario ingresando su correo y password.",
+            Tags = new[] { "Auth" }
+        )]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] Login.LoginRequest request)
         {
             try
@@ -71,5 +76,6 @@ namespace gomind_backend_api.Controllers
                 return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
             }
         }
+        #endregion
     }
 }

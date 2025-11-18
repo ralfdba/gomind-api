@@ -11,6 +11,7 @@ using gomind_backend_api.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Data;
 using System.Security.Claims;
 using System.Text.Json;
@@ -43,6 +44,11 @@ namespace gomind_backend_api.Controllers
         #region Subir Examen Médico 
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
+        [SwaggerOperation(
+            Summary = "Subir examen médico en formato PDF",
+            Description = "Permite subir el examen médico en formato PDF. Esto creará un Job, el cual proporcionará el status de la extracción de los parametros del examen.",
+            Tags = new[] { "Examinations" }
+        )]
         public async Task<ActionResult<ExaminationResponse>> UploadExamination([FromForm] ExaminationRequest request)
         {
             #region Inicio Log Information
@@ -121,6 +127,11 @@ namespace gomind_backend_api.Controllers
 
         #region Consultar Status Job 
         [HttpGet("job/{job_id}")]
+        [SwaggerOperation(
+            Summary = "Consultar status del Job",
+            Description = "Permite consultar el Status del Job, este indicará el estado de la extracción de los parametros del examen. Los Status son Pendiente y Completado.",
+            Tags = new[] { "Examinations" }
+        )]
         public async Task<ActionResult<JobResponse>> GetJobStatus(string job_id)
         {
             #region Inicio Log Information
@@ -180,6 +191,11 @@ namespace gomind_backend_api.Controllers
         
         #region Consultar Análisis IA 
         [HttpGet("analysis-job/{job_id}")]
+        [SwaggerOperation(
+            Summary = "Obtiene los parametros cuando el Job esta en Status Completado",
+            Description = "Permite obtener los parametros extraidos del examen si el Status del Job es Completado. Tras obtener los parametros, compara las referencias de rangos parametrizadas a estos parametros y si estan fuera de rango, se devolveran en el response de este servicio.",
+            Tags = new[] { "Examinations" }
+        )]
         public async Task<ActionResult<List<AnalysisResult>>> GetAnalysisIa(string job_id)
         {
             #region Inicio Log Information
@@ -241,6 +257,11 @@ namespace gomind_backend_api.Controllers
 
         #region Guardar Análisis IA 
         [HttpPost("analysis")]
+        [SwaggerOperation(
+            Summary = "Guardar parametros analizados fuera de rango",
+            Description = "Permite guardar el parametro que estaba fuera de rango tras el análisis.",
+            Tags = new[] { "Examinations" }
+        )]
         public async Task<ActionResult<MessageResponse>> SaveAnalysis([FromBody] AnalysisRequest request)
         {
             #region Inicio Log Information

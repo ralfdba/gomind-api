@@ -3,6 +3,7 @@ using gomind_backend_api.Models.ReferenceRange;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Reflection;
 using System.Text.Json;
 
@@ -23,6 +24,11 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener todas las referencia de rango
         [HttpGet]
+        [SwaggerOperation(
+            Summary = "Obtener las referencias de rango",
+            Description = "Permite obtener las referencias de rango.",
+            Tags = new[] { "ReferencesRange" }
+        )]
         public async Task<ActionResult<ReferenceRange>> GetAllReferenceRanges()
         {
             try
@@ -44,6 +50,11 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener referencia de rango por ID
         [HttpGet("{id}")]
+        [SwaggerOperation(
+            Summary = "Obtener las referencias de rango por su ID",
+            Description = "Permite obtener las referencias de rango por su ID.",
+            Tags = new[] { "ReferencesRange" }
+        )]
         public async Task<ActionResult<ReferenceRange>> GetReferenceRangeById(int id)
         {
             #region Inicio Log Information
@@ -80,6 +91,11 @@ namespace gomind_backend_api.Controllers
 
         #region Obtener referencia de rango por Parameter ID
         [HttpGet("parameter/{id}")]
+        [SwaggerOperation(
+            Summary = "Obtener las referencias de rango por el ID del parametro",
+            Description = "Permite obtener las referencias de rango por el ID del parametro.",
+            Tags = new[] { "ReferencesRange" }
+        )]
         public async Task<ActionResult<IEnumerable<ReferenceRange>>> GetReferenceRangeByParameterId(int id)
         {
             #region Inicio Log Information
@@ -116,6 +132,11 @@ namespace gomind_backend_api.Controllers
 
         #region Crear referencia de rango 
         [HttpPost]
+        [SwaggerOperation(
+            Summary = "Crear referencia de rango",
+            Description = "Permite crear una referencia de rango a un parametro.",
+            Tags = new[] { "ReferencesRange" }
+        )]
         public async Task<ActionResult<MessageResponse>> CreateReferenceRange([FromBody] ReferenceRangeRequest request)
         {
             #region Inicio Log Information
@@ -165,6 +186,11 @@ namespace gomind_backend_api.Controllers
 
         #region Modificar referencia de rango
         [HttpPut("{id}")]
+        [SwaggerOperation(
+            Summary = "Modificar referencia de rango",
+            Description = "Permite modificar una referencia de rango.",
+            Tags = new[] { "ReferencesRange" }
+        )]
         public async Task<ActionResult<MessageResponse>> UpdateReferenceRange(int id, [FromBody] ReferenceRangeRequest request)
         {
             #region Inicio Log Information
@@ -205,6 +231,11 @@ namespace gomind_backend_api.Controllers
 
         #region Eliminar referencia de rango
         [HttpDelete("{id}")]
+        [SwaggerOperation(
+            Summary = "Eliminar referencia de rango",
+            Description = "Permite eliminar una referencia de rango.",
+            Tags = new[] { "ReferencesRange" }
+        )]
         public async Task<ActionResult<MessageResponse>> DeleteReferenceRange(int id)
         {
             #region Inicio Log Information
