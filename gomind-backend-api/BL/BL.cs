@@ -1,4 +1,5 @@
 ﻿using Amazon.DynamoDBv2.Model;
+using Amazon.Runtime.Internal;
 using Amazon.Runtime.Internal.Transform;
 using BCrypt.Net;
 using gomind_backend_api.Bcrypt;
@@ -99,74 +100,129 @@ namespace gomind_backend_api.BL
         public async Task<UserExist> CheckUserByEmail(string email)
         {
             UserExist userExist = new UserExist();
+            Random random = new Random();
+            try             
+            {
+                #region Obtener usuario por email
+                var user = await _dbConnection.ExecuteQueryAsync("CALL api_get_user_by_email(@p_email);",
+                   reader => new
+                   {
+                       UserId = reader.GetInt32("user_id"),
+                       PasswordHash = reader.GetString("secret2")
+                   },
+                   new Dictionary<string, object>
+                   {                    
+                       { "p_email", email }
+                   });
 
-            var user = await _dbConnection.ExecuteQueryAsync("CALL api_get_user_by_email(@p_email);",
-                reader => new
+                if (user.Count == 0)
                 {
-                    UserId = reader.GetInt32("user_id"),
-                    PasswordHash = reader.GetString("secret2")
-                },
-                new Dictionary<string, object>
-                {                
-                    { "p_email", email }
-                });
+                    return userExist;
+                }
+                #endregion
 
-            if (user.Count == 0)
-            {                
+                #region Se genera codigo de verificacion aleatorio y se guarda en BBDD
+
+                int codigoVerificacion = random.Next(1000, 10000);
+
+                await _dbConnection.ExecuteNonQueryAsync(                   
+                    "CALL api_upsert_auth_user_code(@p_user_id, @p_code)",
+                   
+                    new Dictionary<string, object>
+                    {
+                        { "p_user_id", user[0].UserId },
+                        { "p_code", codigoVerificacion.ToString() }                    
+                    }
+                );
+                #endregion
+
+                #region Se envia el codigo de verificacion al correo del usuario
+
+                //BLOQUE PARA ENVIAR EL CORREO ELECTRONICO CON EL CODIGO DE VERIFICACION
+
+                userExist.Exist = true;
+
+                #endregion
+
                 return userExist;
-            }   
-            userExist.Exist = true;
-            return userExist;
+
+            }
+            catch (Exception ex)
+            {
+                userExist.Exist = false;
+                return userExist;
+            }           
         }
         #endregion
 
         #region Obtener Usuario por Email y codigo de verificacion
         public async Task<UserInfo?> GetUserByEmailAuthCode(string email, int authCode)
         {
-            #region CAMBIAR ESTE SP POR UN NUEVO SP QUE VALIDE EL CODIGO DE AUTENTICACION Y EL CORREO
-            //var userExist = await _dbConnection.ExecuteQueryAsync("CALL api_get_user_by_email(@p_email);",
-            //    reader => new
-            //    {
-            //        UserId = reader.GetInt32("user_id"),
-            //        PasswordHash = reader.GetString("secret2")
-            //    },
-            //    new Dictionary<string, object>
-            //    {                
-            //        { "p_email", email }
-            //    });
-
-            //if (userExist.Count == 0)
-            //{
-            //    return null;
-            //}
-            //var userAuth = userExist[0];
-            var userAuth = new
+            try
             {
-                UserId = 4               
-            };
+                #region Obtener usuario por email
+                var user = await _dbConnection.ExecuteQueryAsync("CALL api_get_user_by_email(@p_email);",
+                   reader => new
+                   {
+                       UserId = reader.GetInt32("user_id"),
+                       PasswordHash = reader.GetString("secret2")
+                   },
+                   new Dictionary<string, object>
+                   {                  
+                       { "p_email", email }
+                   });
 
-            if (authCode != 1234)
+                if (user.Count == 0)
+                {
+                    return null;
+                }
+                #endregion
+
+                #region Validar codigo de verificacion
+                var userExist = await _dbConnection.ExecuteQueryAsync("CALL api_validate_user_code(@p_user_id, @p_code);",
+                    reader => new
+                    {
+                        Uuid = reader.GetGuid("id"),
+                        UserId = reader.GetInt32("user_id"),
+                        Code = reader.GetString("code"),
+                        CreatedDate = reader.GetDateTime("created_date")
+                    },
+                    new Dictionary<string, object>
+                    {                   
+                        { "p_user_id", user[0].UserId },
+                        { "p_code", authCode.ToString() }
+                    });
+
+                if (userExist.Count == 0)
+                {
+                    return null;
+                }  
+                #endregion
+
+                #region Se obtiene la data del usuario
+
+                var dataUser = await _dbConnection.ExecuteQueryAsync<UserInfo>(
+                    "CALL api_get_user_demographic_by_id(@p_user_id);",
+                    (reader) => new UserInfo
+                    {
+                        UserId = reader.GetInt32("user_id"),
+                        Name = reader.GetString("name"),
+                        CompanyId = reader.GetInt32("company_id")
+                    },
+                    new Dictionary<string, object>
+                    {                   
+                        { "p_user_id", userExist[0].UserId }
+                    }
+                );
+                #endregion
+
+                return dataUser.FirstOrDefault();
+
+            }
+            catch (Exception ex)
             {
                 return null;
-            }            
-               
-            #endregion
-
-            var dataUser = await _dbConnection.ExecuteQueryAsync<UserInfo>(
-                "CALL api_get_user_demographic_by_id(@p_user_id);",
-                (reader) => new UserInfo
-                {
-                    UserId = reader.GetInt32("user_id"),
-                    Name = reader.GetString("name"),
-                    CompanyId = reader.GetInt32("company_id")
-                },               
-                new Dictionary<string, object>
-                {                
-                    { "p_user_id", userAuth.UserId }
-                }
-            );
-
-            return dataUser.FirstOrDefault();
+            }    
         }
         #endregion
 
