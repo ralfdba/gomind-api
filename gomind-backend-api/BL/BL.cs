@@ -54,7 +54,7 @@ namespace gomind_backend_api.BL
             _bcrypt = new BcryptServices();
         }
         
-        #region Obtener Usuario Email
+        #region Obtener Usuario por Email y Password
         public async Task<UserInfo?> GetUserByEmail(string email, string pass)
         {               
             var userExist = await _dbConnection.ExecuteQueryAsync("CALL api_get_user_by_email(@p_email);",
@@ -64,8 +64,8 @@ namespace gomind_backend_api.BL
                     PasswordHash = reader.GetString("secret2")
                 },
                 new Dictionary<string, object>
-                {
-                { "p_email", email }
+                {               
+                    { "p_email", email }
                 });
 
             if (userExist.Count == 0) {
@@ -87,6 +87,81 @@ namespace gomind_backend_api.BL
                 },
                 new Dictionary<string, object>
                 {
+                    { "p_user_id", userAuth.UserId }
+                }
+            );
+
+            return dataUser.FirstOrDefault();
+        }
+        #endregion
+
+        #region Comprobar si existe Usuario por Email y envio de codigo de verificacion
+        public async Task<UserExist> CheckUserByEmail(string email)
+        {
+            UserExist userExist = new UserExist();
+
+            var user = await _dbConnection.ExecuteQueryAsync("CALL api_get_user_by_email(@p_email);",
+                reader => new
+                {
+                    UserId = reader.GetInt32("user_id"),
+                    PasswordHash = reader.GetString("secret2")
+                },
+                new Dictionary<string, object>
+                {                
+                    { "p_email", email }
+                });
+
+            if (user.Count == 0)
+            {                
+                return userExist;
+            }   
+            userExist.Exist = true;
+            return userExist;
+        }
+        #endregion
+
+        #region Obtener Usuario por Email y codigo de verificacion
+        public async Task<UserInfo?> GetUserByEmailAuthCode(string email, int authCode)
+        {
+            #region CAMBIAR ESTE SP POR UN NUEVO SP QUE VALIDE EL CODIGO DE AUTENTICACION Y EL CORREO
+            //var userExist = await _dbConnection.ExecuteQueryAsync("CALL api_get_user_by_email(@p_email);",
+            //    reader => new
+            //    {
+            //        UserId = reader.GetInt32("user_id"),
+            //        PasswordHash = reader.GetString("secret2")
+            //    },
+            //    new Dictionary<string, object>
+            //    {                
+            //        { "p_email", email }
+            //    });
+
+            //if (userExist.Count == 0)
+            //{
+            //    return null;
+            //}
+            //var userAuth = userExist[0];
+            var userAuth = new
+            {
+                UserId = 4               
+            };
+
+            if (authCode != 1234)
+            {
+                return null;
+            }            
+               
+            #endregion
+
+            var dataUser = await _dbConnection.ExecuteQueryAsync<UserInfo>(
+                "CALL api_get_user_demographic_by_id(@p_user_id);",
+                (reader) => new UserInfo
+                {
+                    UserId = reader.GetInt32("user_id"),
+                    Name = reader.GetString("name"),
+                    CompanyId = reader.GetInt32("company_id")
+                },               
+                new Dictionary<string, object>
+                {                
                     { "p_user_id", userAuth.UserId }
                 }
             );
@@ -1175,7 +1250,6 @@ namespace gomind_backend_api.BL
         }
 
         #endregion
-
 
     }
 }

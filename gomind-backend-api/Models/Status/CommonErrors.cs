@@ -10,6 +10,8 @@
 
         #region Login
         public static readonly string MissingCredentials = "Debe ingresar el correo y password.";
+        public static readonly string MissingCredentials2 = "Debe ingresar el correo.";
+        public static readonly string MissingCredentials3 = "Debe ingresar el correo y código de verificación.";
         public static readonly string InvalidCredentials = "No se ha podido iniciar sesión.";
         #endregion
 

@@ -9,10 +9,24 @@ namespace gomind_backend_api.Models.Login
         public class LoginRequest
         {
             [JsonPropertyName("email")]
-            public string Email { get; set; }
+            public required string Email { get; set; }
 
             [JsonPropertyName("password")]
-            public string Password { get; set; }
+            public required string Password { get; set; }
+        }
+
+        public class AuthRequestByEmail
+        {
+            [JsonPropertyName("email")]
+            public required string Email { get; set; }            
+        }
+        public class LoginRequestAuthCode
+        {
+            [JsonPropertyName("email")]
+            public required string Email { get; set; }
+
+            [JsonPropertyName("auth_code")]
+            public required int AuthCode { get; set; }
         }
 
         public class LoginResponse
