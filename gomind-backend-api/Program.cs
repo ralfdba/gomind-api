@@ -1,19 +1,21 @@
-using Microsoft.AspNetCore.Authentication.Negotiate;
-using gomind_backend_api.DB;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using gomind_backend_api.JWT;
-using gomind_backend_api.BL;
-using Microsoft.OpenApi.Models;
-using gomind_backend_api.Models.Errors;
-using Amazon.S3;
-using gomind_backend_api.AWS;
 using Amazon.DynamoDBv2;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http.HttpResults;
-using gomind_backend_api.Resources;
+using Amazon.S3;
 using AWS.Logger;
+using gomind_backend_api.AWS;
+using gomind_backend_api.BL;
+using gomind_backend_api.DB;
+using gomind_backend_api.JWT;
+using gomind_backend_api.Models.Errors;
+using gomind_backend_api.Models.Utils;
+using gomind_backend_api.Resources;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -104,8 +106,14 @@ builder.Services.AddScoped<IDynamoDbService, DynamoDbService>();
 builder.Services.AddScoped<BL>();
 #endregion
 
-#region Resources
+#region Resources Services
 builder.Services.AddSingleton<IHealthResourcesService, HealthResourcesService>();
+
+builder.Services.Configure<EmailSettingsOptions>(builder.Configuration.GetSection(EmailSettingsOptions.EmailSettings));
+builder.Services.Configure<CorreoFromOptions>(builder.Configuration.GetSection("CorreoFrom"));
+builder.Services.AddScoped<INotificacion, Notificacion>();
+builder.Services.AddScoped<IEnvioCorreoService, EnvioCorreoService>();
+
 #endregion
 
 #region Controllers

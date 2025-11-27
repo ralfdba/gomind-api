@@ -1,0 +1,210 @@
+<html>
+<head>
+	<title>Tu Código de Verificación</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<style type="text/css">
+		/* Client-specific Styles */
+		#outlook a {
+			padding: 0;
+		}
+
+		body {
+			width: 100% !important;
+		}
+
+		.ReadMsgBody {
+			width: 100%;
+		}
+
+		.ExternalClass {
+			width: 100%;
+		}
+
+		body {
+			-webkit-text-size-adjust: none;
+		}
+
+		/* Reset Styles */
+		body {
+			margin: 0;
+			padding: 0;
+		}
+
+		img {
+			border: 0;
+			height: auto;
+			line-height: 100%;
+			outline: none;
+			text-decoration: none;
+		}
+
+		table td {
+			border-collapse: collapse;
+		}
+
+		#backgroundTable {
+			height: 100% !important;
+			margin: 0;
+			padding: 0;
+			width: 100% !important;
+		}
+
+		/* --- Colores de Marca --- */
+		/* Azul de Enlaces/Resaltado: #0067A9 (del template original) */
+		/* Morado de Énfasis: #5D62D9 (similar al logo goMind) */
+		/* Gris Neutro: #707070 */
+		/* Color del Código: #5D62D9 */
+
+		body, #backgroundTable {
+			background-color: #FAFAFA;
+		}
+
+		#templateContainer {
+			border: 1px solid #DDDDDD;
+		}
+
+		/* Encabezados */
+		h1, .h1 {
+			color: #5D62D9; /* Color Morado de la marca */
+			display: block;
+			font-family: Arial;
+			font-size: 30px;
+			font-weight: bold;
+			line-height: 100%;
+			margin-top: 0;
+			margin-bottom: 10px;
+			text-align: left;
+		}
+
+		h4, .h4 {
+			color: #0067A9; /* Azul para resaltar la acción */
+			display: block;
+			font-family: Arial;
+			font-size: 20px;
+			font-weight: bold;
+			line-height: 100%;
+			margin-top: 0;
+			margin-bottom: 10px;
+			text-align: left;
+		}
+
+		/* Párrafos */
+		p, .p {
+			color: #202020;
+			display: block;
+			font-family: Arial;
+			font-size: 16px;
+			font-weight: normal;
+			line-height: 180%;
+			margin-top: 0;
+			margin-bottom: 10px;
+			text-align: left;
+		}
+
+		/* Footer */
+		.footerContent div {
+			color: #707070;
+			font-family: Arial;
+			font-size: 12px;
+			line-height: 125%;
+			text-align: left;
+		}
+
+		/* Enlaces */
+		a {
+			text-decoration: none;
+			color: #0067A9; /* Azul de enlace */
+			font-weight: bold;
+		}
+
+		/* Estilo Específico para el Código de Verificación */
+		.verification-code {
+			background-color: #e6e6fa; /* Lila/Violeta claro para el fondo */
+			color: #5D62D9; /* Morado fuerte para el texto */
+			font-family: monospace; /* Fuente monoespaciada para código */
+			font-size: 28px;
+			font-weight: bold;
+			display: inline-block;
+			padding: 15px 30px;
+			border-radius: 8px;
+			letter-spacing: 5px;
+			text-align: center;
+			width: 50%; /* Asegura que el bloque sea grande */
+			margin: 20px auto; /* Centrar el bloque */
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		}
+
+		/* Estilo del Contenedor del Código */
+		.code-container-cell {
+			text-align: center;
+			padding: 20px 0;
+		}
+	</style>
+</head>
+<body bgcolor="#FAFAFA" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+	<!-- Save for Web Slices (Email Verification Template) -->
+	<table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" id="backgroundTable">
+		<tr>
+			<td align="center" valign="top">
+				<table border="0" cellpadding="0" cellspacing="0" width="660" id="templateContainer" style="border: none;">
+					<tr>
+						<td align="center" valign="top">
+							<!-- HEADER SECTION (Imagen de Acceso/Logo) -->
+							<table border="0" cellpadding="0" cellspacing="0" width="100%" id="emailHeader">
+								<tr>
+									<td align="center" valign="top" style="padding-bottom: 20px;">										 
+										<img src="https://gomind-desa-resources.s3.us-east-1.amazonaws.com/banner-preeliminar2-gomind.png" width="660" height="100" style="display: block; max-width: 660px; border: 0;" alt="Header goMind">
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td align="center" valign="top">
+							<!-- BODY SECTION -->
+							<table border="0" cellpadding="20" cellspacing="0" width="100%" id="emailBody" bgcolor="#ffffff">
+								<tr>
+									<td align="left" valign="top" style="padding: 20px 40px;">
+										<h1>Verificación de Acceso Requerida</h1><br>
+
+										<p>Hemos recibido una solicitud para acceder a tu cuenta. Para continuar con el proceso, por favor utiliza el siguiente código de autenticación:</p>
+
+										<!-- Contenedor del Código -->
+										<table border="0" cellpadding="0" cellspacing="0" width="100%">
+											<tr>
+												<td class="code-container-cell">
+													<div class="verification-code">
+														[CODIGO]
+													</div>
+												</td>
+											</tr>
+										</table>
+
+										<h4>¿Qué hacer ahora?</h4>
+										<p>Vuelve al chatbot en Whatsapp y copia/pega el código de 4 dígitos para completar el acceso.</p>																				
+									</td>
+								</tr>
+
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td align="center" valign="top">
+							<!-- FOOTER: NO RESPONDER y COPYRIGHT/Firma -->
+							<table border="0" cellpadding="20" cellspacing="0" width="100%">
+								<tr>
+									<td align="center" valign="top" bgcolor="#5D62D9">
+										<!-- Color de fondo Morado -->
+										<p style="color: #ffffff; font-size: 14px; margin: 0;">Este mail se ha generado de forma automática. Por favor, no lo respondas directamente.</p>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+	<!-- End Save for Web Slices -->
+</body>
+</html>

@@ -15,6 +15,7 @@ using gomind_backend_api.Models.User;
 using gomind_backend_api.Models.Utils;
 using gomind_backend_api.Resources;
 using MySqlConnector;
+using Services;
 using System.ComponentModel.Design;
 using System.Data;
 using System.Drawing;
@@ -44,14 +45,15 @@ namespace gomind_backend_api.BL
     public class BL
     {       
         private readonly IMariaDbConnection _dbConnection;
-        private readonly IHealthResourcesService _healthResourcesService; 
-
+        private readonly IHealthResourcesService _healthResourcesService;
+        private readonly INotificacion _notificacion;
         private readonly BcryptServices _bcrypt;
        
-        public BL(IMariaDbConnection dbConnection, IHealthResourcesService healthResourcesService)
+        public BL(IMariaDbConnection dbConnection, IHealthResourcesService healthResourcesService, INotificacion notificacion)
         {
             _dbConnection = dbConnection;
             _healthResourcesService = healthResourcesService;
+            _notificacion = notificacion;
             _bcrypt = new BcryptServices();
         }
         
@@ -137,8 +139,16 @@ namespace gomind_backend_api.BL
                 #endregion
 
                 #region Se envia el codigo de verificacion al correo del usuario
+                
+                Destinatario destinatario = new Destinatario();
+                destinatario.Correo = email;
+                var statusEnvioCorreo = _notificacion.EnvioCodigoVerificacion(codigoVerificacion.ToString(), destinatario);
 
-                //BLOQUE PARA ENVIAR EL CORREO ELECTRONICO CON EL CODIGO DE VERIFICACION
+                if (!statusEnvioCorreo.IsOK)
+                {
+                    //userExist.Exist = false;
+                    throw new Exception(statusEnvioCorreo.Mensaje ?? "Error al enviar el correo.");
+                }
 
                 userExist.Exist = true;
 

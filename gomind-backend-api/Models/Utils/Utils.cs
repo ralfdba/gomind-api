@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace gomind_backend_api.Models.Utils
 {
@@ -84,6 +85,46 @@ namespace gomind_backend_api.Models.Utils
 
         [JsonPropertyName("color")]
         public string Color { get; set; }
+    }
+    #endregion
+
+    #region Correo
+    public class Reemplazar
+    {
+        public string TextoBuscar { get; set; } = String.Empty;
+        public string TextoReemplazar { get; set; } = String.Empty;
+    }
+
+    public class Destinatario
+    {
+        public int? RUT { get; set; }
+        public string? Nombre { get; set; }
+        public string? Correo { get; set; }
+    }
+    public class EmailSettingsOptions
+    {
+        public const string EmailSettings = "EmailSettings";
+
+        public string? SmtpServer { get; set; }
+        public string? ToEmailQA { get; set; }
+        public bool SistemaEstaEnQA { get; set; }
+    }
+    public class CorreoFromOptions
+    {
+        public Dictionary<string, string> Correo { get; set; } = new();
+    }
+    public class Status
+    {
+        [Required]
+        public bool IsOK { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Mensaje { get; set; }
+
+        public Status()
+        {
+            IsOK = true;
+        }
     }
     #endregion
 
