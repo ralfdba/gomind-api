@@ -23,6 +23,8 @@ jobs:
       ENV_ENVIRONMENT: ${{ vars.ENVIRONMENT}}
       ENV_JWT_SECRET: ${{ secrets.JWT_SECRET }}
       ENV_MARIADB_CONNECTION: ${{ secrets.MARIADB_CONNECTION }}
+      ENV_SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      ENV_SMTP_USER: ${{ secrets.SMTP_USER }}
       
     permissions:
       id-token: write
@@ -47,6 +49,8 @@ jobs:
         --build-arg BUILD_PATH=$BUILD_PATH \
         --build-arg ENV_ENVIRONMENT=$ENV_ENVIRONMENT \
         --build-arg ENV_JWT_SECRET=$ENV_JWT_SECRET \
+        --build-arg ENV_SMTP_PASSWORD=$ENV_SMTP_PASSWORD \
+        --build-arg ENV_SMTP_USER=$ENV_SMTP_USER \
         --build-arg ENV_MARIADB_CONNECTION=$ENV_MARIADB_CONNECTION \
         -t $AWS_ECR_REPOSITORY:$IMAGE_TAG-${{ github.run_number }} -f ./${BUILD_PATH}Dockerfile .
         docker tag $AWS_ECR_REPOSITORY:$IMAGE_TAG-${{ github.run_number }} $AWS_ECR_REPOSITORY:$IMAGE_TAG-latest
