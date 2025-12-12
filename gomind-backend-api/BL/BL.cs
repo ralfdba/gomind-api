@@ -26,6 +26,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Transactions;
 using System.Xml.Linq;
 using static gomind_backend_api.Models.Appointments.Appointments;
@@ -124,7 +125,7 @@ namespace gomind_backend_api.BL
                 {
                     return userExist;
                 }
-                _logger.LogInformation("USUARIO POR EMAIL - {user}", user);
+                _logger.LogInformation("USUARIO POR EMAIL EXITOSO");
                 #endregion
 
                 #region Se genera codigo de verificacion aleatorio y se guarda en BBDD
@@ -148,7 +149,7 @@ namespace gomind_backend_api.BL
                 Destinatario destinatario = new Destinatario();
                 destinatario.Correo = email;
                 var statusEnvioCorreo = _notificacion.EnvioCodigoVerificacion(codigoVerificacion.ToString(), destinatario);
-                _logger.LogInformation("STATUS ENVIO CORREO - {status}", statusEnvioCorreo);
+                _logger.LogInformation("STATUS ENVIO CORREO - {status}",JsonSerializer.Serialize(statusEnvioCorreo));
 
                 if (!statusEnvioCorreo.IsOK)
                 {
