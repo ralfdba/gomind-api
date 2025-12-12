@@ -25,6 +25,9 @@ ARG BUILD_CONFIGURATION=Release
 ARG BUILD_PATH=''
 RUN dotnet publish "./${BUILD_PATH}gomind-backend-api.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
 
+# Copiar recursos
+COPY ${BUILD_PATH}Templates/ /app/publish/templates
+
 # Esta fase se usa en producción o cuando se ejecuta desde VS en modo normal (valor predeterminado cuando no se usa la configuración de depuración)
 FROM base AS final
 USER root
@@ -36,6 +39,8 @@ COPY --from=publish /app/publish .
 ARG ENV_ENVIRONMENT=Development
 ARG ENV_JWT_SECRET
 ARG ENV_MARIADB_CONNECTION
+ARG ENV_SMTP_PASSWORD
+ARG ENV_SMTP_USER
 
 # Agregar variables de entorno
 ENV ASPNETCORE_HTTP_PORTS=80
