@@ -82,7 +82,7 @@ namespace gomind_backend_api.Controllers
         #region Login Aplicativo Whatsapp, comprobar usuario existente
         [HttpPost("login/user-exist")]
         [SwaggerOperation(
-            Summary = "Comprobación del usuario en el sistema para Whatsapp..",
+            Summary = "Comprobación del usuario en el sistema para Whatsapp.",
             Description = "Permite comprobar que el usuario exista en el sistema ingresando su correo. Posterior a esto, se envia un codigo de verificación al correo para confirmar el acceso.",
             Tags = new[] { "Auth" }
         )]
