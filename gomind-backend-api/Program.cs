@@ -9,8 +9,6 @@ using gomind_backend_api.Models.Errors;
 using gomind_backend_api.Models.Utils;
 using gomind_backend_api.Resources;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.Negotiate;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -18,6 +16,13 @@ using Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Agrega configuración desde appsettings.json y sus variantes
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddEnvironmentVariables(); // Aquí se agregan las variables de entorno
 
 #region JWT
 // Cargar configuración de JWT
