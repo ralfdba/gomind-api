@@ -46,8 +46,10 @@ namespace Services
 
             try
             {
+                _logger.LogInformation("SMTP USER: {Smpt}, - SMTP PASS: {pass}", _smtpUser, _smtpPassword);
                 string? fromEmail = _correoFromOptions.Correo["Gomind"];
                 Enviar(fromEmail, listaReemplazo, correoAsunto, listaDestinatarios, rutaTemplate, attachments, CC, BCC);
+                
             }
             catch (Exception ex)
             {

@@ -3,6 +3,7 @@ using Amazon.Runtime.Internal;
 using Amazon.Runtime.Internal.Transform;
 using BCrypt.Net;
 using gomind_backend_api.Bcrypt;
+using gomind_backend_api.Controllers;
 using gomind_backend_api.DB;
 using gomind_backend_api.Models.Appointments;
 using gomind_backend_api.Models.Errors;
@@ -25,6 +26,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Transactions;
 using System.Xml.Linq;
 using static gomind_backend_api.Models.Appointments.Appointments;
@@ -43,14 +45,16 @@ namespace gomind_backend_api.BL
     }
     #endregion
     public class BL
-    {       
+    {
+        private readonly ILogger<BL> _logger;
         private readonly IMariaDbConnection _dbConnection;
         private readonly IHealthResourcesService _healthResourcesService;
         private readonly INotificacion _notificacion;
         private readonly BcryptServices _bcrypt;
        
-        public BL(IMariaDbConnection dbConnection, IHealthResourcesService healthResourcesService, INotificacion notificacion)
+        public BL(ILogger<BL> logger, IMariaDbConnection dbConnection, IHealthResourcesService healthResourcesService, INotificacion notificacion)
         {
+            _logger = logger;
             _dbConnection = dbConnection;
             _healthResourcesService = healthResourcesService;
             _notificacion = notificacion;
@@ -121,6 +125,7 @@ namespace gomind_backend_api.BL
                 {
                     return userExist;
                 }
+                _logger.LogInformation("USUARIO POR EMAIL EXITOSO");
                 #endregion
 
                 #region Se genera codigo de verificacion aleatorio y se guarda en BBDD
@@ -136,13 +141,15 @@ namespace gomind_backend_api.BL
                         { "p_code", codigoVerificacion.ToString() }                    
                     }
                 );
+                _logger.LogInformation("ENVIO CODIGO VERIFICACION EXITOSO");
                 #endregion
 
                 #region Se envia el codigo de verificacion al correo del usuario
-                
+
                 Destinatario destinatario = new Destinatario();
                 destinatario.Correo = email;
                 var statusEnvioCorreo = _notificacion.EnvioCodigoVerificacion(codigoVerificacion.ToString(), destinatario);
+                _logger.LogInformation("STATUS ENVIO CORREO - {status}",JsonSerializer.Serialize(statusEnvioCorreo));
 
                 if (!statusEnvioCorreo.IsOK)
                 {
@@ -160,6 +167,7 @@ namespace gomind_backend_api.BL
             catch (Exception ex)
             {
                 userExist.Exist = false;
+                _logger.LogError("ERROR: {error}", ex.Message);
                 return userExist;
             }           
         }
