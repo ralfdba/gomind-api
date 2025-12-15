@@ -1,4 +1,5 @@
 ﻿using gomind_backend_api.Models.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Net.Mail;
 
@@ -7,6 +8,7 @@ namespace Services
     public class EnvioCorreoService : IEnvioCorreoService
     {
         private readonly ILogger<EnvioCorreoService> _logger;
+        private IConfiguration _configuration;
         private string _smtpServer;
         private string _smtpUser;
         private string _smtpPassword;
@@ -19,6 +21,7 @@ namespace Services
         public EnvioCorreoService(ILogger<EnvioCorreoService> logger, IWebHostEnvironment env, IConfiguration configuration, IOptions<CorreoFromOptions> correoFromOptions)
         {
             _smtpServer = configuration["EmailSettings:SmtpServer"]!;
+            _configuration = configuration;
             _smtpUser =  configuration.GetValue<string>("SMTP_USER") ?? configuration.GetValue<string>("EmailSettings:SMTP_USER")!;
             _smtpPassword = configuration.GetValue<string>("SMTP_PASSWORD") ?? configuration.GetValue<string>("EmailSettings:SMTP_PASSWORD")!;
             _correoFromOptions = correoFromOptions.Value;
@@ -46,7 +49,7 @@ namespace Services
 
             try
             {
-                _logger.LogInformation("SMTP USER: {Smpt}, - SMTP PASS: {pass}", _smtpUser, _smtpPassword);
+                _logger.LogInformation("SMTP USER: {Smpt}, - SMTP PASS: {pass} - MARIADBCONNECTION: {db}", _smtpUser, _smtpPassword, _configuration.GetValue<string>("MARIADB_CONNECTION"));
                 string? fromEmail = _correoFromOptions.Correo["Gomind"];
                 Enviar(fromEmail, listaReemplazo, correoAsunto, listaDestinatarios, rutaTemplate, attachments, CC, BCC);
                 
