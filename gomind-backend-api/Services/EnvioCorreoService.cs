@@ -48,8 +48,7 @@ namespace Services
             }
 
             try
-            {
-                _logger.LogInformation("SMTP USER: {Smpt}, - SMTP PASS: {pass} - MARIADBCONNECTION: {db}", _smtpUser, _smtpPassword, _configuration.GetValue<string>("MARIADB_CONNECTION"));
+            {               
                 string? fromEmail = _correoFromOptions.Correo["Gomind"];
                 Enviar(fromEmail, listaReemplazo, correoAsunto, listaDestinatarios, rutaTemplate, attachments, CC, BCC);
                 
