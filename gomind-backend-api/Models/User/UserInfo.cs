@@ -18,6 +18,7 @@ namespace gomind_backend_api.Models.User
     public class UserExist
     {
         [JsonPropertyName("user_exist")]
-        public bool Exist { get; set; }       
+        public bool Exist { get; set; }        
+        public string? Message { get; set; }
     }
 }

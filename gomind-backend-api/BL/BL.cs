@@ -123,6 +123,7 @@ namespace gomind_backend_api.BL
 
                 if (user.Count == 0)
                 {
+                    userExist.Message = "El usuario no se encuentra registrado en el sitio."; //Texto a personalizar por Gomind
                     return userExist;
                 }
                 _logger.LogInformation("USUARIO POR EMAIL EXITOSO");
@@ -152,13 +153,13 @@ namespace gomind_backend_api.BL
                 _logger.LogInformation("STATUS ENVIO CORREO - {status}",JsonSerializer.Serialize(statusEnvioCorreo));
 
                 if (!statusEnvioCorreo.IsOK)
-                {
-                    //userExist.Exist = false;
-                    throw new Exception(statusEnvioCorreo.Mensaje ?? "Error al enviar el correo.");
+                {                   
+                    userExist.Message = statusEnvioCorreo.Mensaje ?? "Error al enviar el correo.";  
+                    return userExist;
                 }
 
                 userExist.Exist = true;
-
+                userExist.Message = "";
                 #endregion
 
                 return userExist;
@@ -167,6 +168,7 @@ namespace gomind_backend_api.BL
             catch (Exception ex)
             {
                 userExist.Exist = false;
+                userExist.Message = ex.Message;
                 _logger.LogError("ERROR: {error}", ex.Message);
                 return userExist;
             }           
