@@ -79,7 +79,7 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Obtener appointments por userId
-        [HttpGet("search")]
+        [HttpGet("users/search")]
         [SwaggerOperation(
             Summary = "Obtener citas médicas del usuario",
             Description = "Permite obtener las citas médicas del usuario en sesión.",
