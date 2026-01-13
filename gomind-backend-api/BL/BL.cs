@@ -123,7 +123,7 @@ namespace gomind_backend_api.BL
 
                 if (user.Count == 0)
                 {
-                    userExist.Message = "El usuario no se encuentra registrado en el sitio."; //Texto a personalizar por Gomind
+                    userExist.Message = CommonErrors.UserNotFound;
                     return userExist;
                 }
                 _logger.LogInformation("USUARIO POR EMAIL EXITOSO");

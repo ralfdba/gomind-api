@@ -283,7 +283,7 @@ namespace gomind_backend_api.Controllers
                     return BadRequest(MessageResponse.Create(CommonErrors.BadRequest1));
                 }
 
-                var job = await _dynamoDbService.GetAsync<Job>(job_id);
+                //var job = await _dynamoDbService.GetAsync<Job>(job_id);
 
                 //if (job == null)
                 //{

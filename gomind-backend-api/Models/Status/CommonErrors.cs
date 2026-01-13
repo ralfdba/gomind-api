@@ -13,6 +13,7 @@
         public static readonly string MissingCredentials2 = "Debe ingresar el correo.";
         public static readonly string MissingCredentials3 = "Debe ingresar el correo y código de verificación.";
         public static readonly string InvalidCredentials = "No se ha podido iniciar sesión.";
+        public static readonly string UserNotFound = "No encontramos una cuenta asociada a este correo electrónico. Por favor, verifica que esté bien escrito o regístrate para crear una cuenta nueva.";
         #endregion
 
         #region Generic Errors
