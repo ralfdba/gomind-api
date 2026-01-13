@@ -4,14 +4,11 @@ using System.Threading.Tasks;
 namespace Services
 {
     public class Notificacion : INotificacion
-    {
-        private IConfiguration _configuration;
-        private IEnvioCorreoService _envioCorreoService;
-
-        public Notificacion(IConfiguration configuration, IEnvioCorreoService envioCorreoService)
+    {        
+        private readonly IEnvioCorreoService _envioCorreoService;
+        public Notificacion(IEnvioCorreoService envioCorreoService)
         {
-            _envioCorreoService = envioCorreoService;
-            _configuration = configuration;
+            _envioCorreoService = envioCorreoService;           
         }
 
         public Status EnvioCodigoVerificacion(string codigoVerificacion, Destinatario destinatario)

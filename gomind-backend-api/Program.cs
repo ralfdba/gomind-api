@@ -187,14 +187,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.MapGet("/", () =>
-{
-    return Results.Ok(new
-    {
-        message = "Gomind API"
-    });
-});
-
 app.MapHealthChecks("/healthz");
 app.UseCors(builder => builder
  .AllowAnyOrigin()

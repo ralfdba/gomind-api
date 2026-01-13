@@ -19,7 +19,7 @@ namespace gomind_backend_api.Models.Parameters
         public string? UnitOfMeasure { get; set; }
        
         [JsonPropertyName("keys_results")]
-        public List<string>? KeysResults { get; set; }
+        public required List<KeyResultDetail> KeysResults { get; set; } = new();
     }
     public class ParameterRequest
     {
@@ -35,8 +35,16 @@ namespace gomind_backend_api.Models.Parameters
         public string? UnitOfMeasure { get; set; }
 
         [Required]
-        [JsonPropertyName("keys_results")]
-        public List<string> KeysResults { get; set; }
+        [JsonPropertyName("keys_results")]        
+        public required List<KeyResultDetail> KeysResults { get; set; }
+    }
+    public class KeyResultDetail
+    {
+        [JsonPropertyName("key")]
+        public required string Key { get; set; }
+
+        [JsonPropertyName("invalid_ranges")]
+        public List<string>? InvalidRanges { get; set; }
     }
     public class ResultParameterRangeReference
     {
@@ -174,4 +182,66 @@ namespace gomind_backend_api.Models.Parameters
     }
     #endregion
 
+
+    #region Parameters Result V2
+    public class ExaminationAnalysis
+    {
+        [JsonPropertyName("metadata")]
+        public AnalysisMetadata Metadata { get; set; } = new();
+
+        [JsonPropertyName("parameters_found")]
+        public List<AnalysisParameter> ParametersFound { get; set; } = new();
+
+        [JsonPropertyName("parameters_out_of_range")]
+        public List<AnalysisParameter> ParametersOutOfRange { get; set; } = new();
+    }
+
+    public class AnalysisMetadata
+    {
+        [JsonPropertyName("job_id")]
+        public string JobId { get; set; } = string.Empty;
+
+        [JsonPropertyName("analysis_date")]
+        public DateTime AnalysisDate { get; set; } = DateTime.UtcNow;
+
+        [JsonPropertyName("parameters_found_count")]
+        public int ParametersFoundCount { get; set; }
+
+        [JsonPropertyName("out_of_range_count")]
+        public int OutOfRangeCount { get; set; }
+    }
+
+    public class AnalysisParameter
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("uuid")]
+        public string Uuid { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; } = string.Empty;
+
+        [JsonPropertyName("unit_of_measure")]
+        public string UnitOfMeasure { get; set; } = string.Empty;
+
+        [JsonPropertyName("analysis")]
+        public List<AnalysisMetric> Analysis { get; set; } = new();
+    }
+
+    public class AnalysisMetric
+    {
+        [JsonPropertyName("key")]
+        public string Key { get; set; } = string.Empty;
+
+        [JsonPropertyName("value")]
+        public string Value { get; set; } = string.Empty;
+
+        [JsonPropertyName("reference_ranges")]
+        public List<string> ReferenceRanges { get; set; } = new();
+    }
+    #endregion
 }

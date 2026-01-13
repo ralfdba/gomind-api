@@ -602,16 +602,19 @@ namespace gomind_backend_api.BL
             "CALL api_get_parameters()",
             (reader) =>
             {
-                List<string> keysResultsList;
+                List<KeyResultDetail> keysResultsList;
                 try
                 {
-                    keysResultsList = JsonSerializer.Deserialize<List<string>>(
-                        reader.IsDBNull(reader.GetOrdinal("keys_results")) ? "[]" : reader.GetString("keys_results")
-                    ) ?? new List<string>();
+                    var jsonString = reader.IsDBNull(reader.GetOrdinal("keys_results"))
+                                ? "[]"
+                                : reader.GetString("keys_results");
+
+                    keysResultsList = JsonSerializer.Deserialize<List<KeyResultDetail>>(jsonString)
+                                      ?? new List<KeyResultDetail>();
                 }
                 catch 
                 {
-                    keysResultsList = new List<string>(); 
+                    keysResultsList = new List<KeyResultDetail>();
                 }
                 return new Parameters
                 {
@@ -633,16 +636,19 @@ namespace gomind_backend_api.BL
                 "CALL api_get_parameter_by_id(@p_id)",
                 (reader) =>
                 {
-                    List<string> keysResultsList;
+                    List<KeyResultDetail> keysResultsList;
                     try
                     {
-                        keysResultsList = JsonSerializer.Deserialize<List<string>>(
-                            reader.IsDBNull(reader.GetOrdinal("keys_results")) ? "[]" : reader.GetString("keys_results")
-                            ) ?? new List<string>();
+                        var jsonString = reader.IsDBNull(reader.GetOrdinal("keys_results"))
+                                 ? "[]"
+                                 : reader.GetString("keys_results");
+                        
+                        keysResultsList = JsonSerializer.Deserialize<List<KeyResultDetail>>(jsonString)
+                                          ?? new List<KeyResultDetail>();
                     }
                     catch
                     {
-                        keysResultsList = new List<string>();
+                        keysResultsList = new List<KeyResultDetail>();
                     }
                     return new Parameters
                     {
@@ -658,8 +664,8 @@ namespace gomind_backend_api.BL
                     { "p_id", parameterId }              
                
                 }               
-                );            
-            return dataParameter.FirstOrDefault() ?? new Parameters();
+                );
+            return dataParameter.FirstOrDefault();
         }
         #endregion
 
@@ -1062,6 +1068,41 @@ namespace gomind_backend_api.BL
                 .ToList();
 
             return groupedResults;
+        }
+
+        public async Task<ExaminationAnalysis?> GetProcessedAnalysisResultsAsync2(string fileKey)
+        {
+            string decodedFileKey = WebUtility.UrlDecode(fileKey);
+
+            var dbResult = await _dbConnection.ExecuteQueryAsync(
+                    "CALL api_get_examination_by_file_key(@p_file_key);",
+                    reader => new
+                    {
+                        AnalysisJson = reader.IsDBNull("analysis_results") ? null : reader.GetString("analysis_results")                   
+                    },
+                    new Dictionary<string, object>
+                    {           
+                        { "p_file_key", decodedFileKey }
+                    }
+                );
+
+            var rawJson = dbResult?.FirstOrDefault()?.AnalysisJson;
+
+            if (string.IsNullOrEmpty(rawJson))
+            {
+                return null;
+            }
+
+            try
+            {               
+                var processedResult = JsonSerializer.Deserialize<ExaminationAnalysis>(rawJson);
+
+                return processedResult;
+            }
+            catch (JsonException ex)
+            {                
+                throw new Exception("Error al procesar el formato de los resultados del análisis.", ex);
+            }
         }
         #endregion
 

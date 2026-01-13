@@ -1,12 +1,8 @@
-﻿using Amazon.Runtime.Internal;
-using gomind_backend_api.Models.Errors;
+﻿using gomind_backend_api.Models.Errors;
 using gomind_backend_api.Models.Parameters;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using System.DirectoryServices.Protocols;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -45,7 +41,7 @@ namespace gomind_backend_api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error");
+                _logger.LogError("Error: {error}", ex.Message);
                 return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
             }
         }

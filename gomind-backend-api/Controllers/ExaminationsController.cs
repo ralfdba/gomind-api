@@ -189,7 +189,7 @@ namespace gomind_backend_api.Controllers
         }
         #endregion
         
-        #region Consultar Análisis IA 
+        #region Consultar parametros obtenidos de la IA 
         [HttpGet("analysis-job/{job_id}")]
         [SwaggerOperation(
             Summary = "Obtiene los parametros cuando el Job esta en Status Completado",
@@ -199,6 +199,8 @@ namespace gomind_backend_api.Controllers
         public async Task<ActionResult<List<AnalysisResult>>> GetAnalysisIa(string job_id)
         {
             #region Inicio Log Information
+            //Se obtiene el UserId del token
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             _logger.LogInformation("Request-Job ID: {job_id}", job_id);
             #endregion
 
@@ -225,6 +227,11 @@ namespace gomind_backend_api.Controllers
                 if (job.key_result == null)
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.JobKeyResultNull));
+                }
+
+                 if (userId <= 0)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
                 }
                 #endregion
                
@@ -253,8 +260,82 @@ namespace gomind_backend_api.Controllers
                 return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
             }
         }
-        #endregion
 
+        [HttpGet("analysis-job2/{job_id}")]
+        [SwaggerOperation(
+            Summary = "Obtiene los parametros cuando el Job esta en Status Completado",
+            Description = "Permite obtener los parametros extraidos del examen si el Status del Job es Completado. Tras obtener los parametros, compara las referencias de rangos parametrizadas a estos parametros y si estan fuera de rango, se devolveran en el response de este servicio.",
+            Tags = new[] { "Examinations" }
+        )]
+        public async Task<ActionResult<ExaminationAnalysis>> GetAnalysisIa2(string job_id)
+        {
+            #region Inicio Log Information
+            //Se obtiene el UserId del token
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            _logger.LogInformation("Request-Job ID: {job_id}", job_id);
+            #endregion
+
+            try
+            {
+                #region Validaciones Iniciales
+                if (job_id == null)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.BadRequest1));
+                }
+
+                var job = await _dynamoDbService.GetAsync<Job>(job_id);
+
+                //if (job == null)
+                //{
+                //    return BadRequest(MessageResponse.Create(CommonErrors.JobNotFound));
+                //}
+
+                //if (job.job_status != JobStatus.Completed || !job.success)
+                //{
+                //    return BadRequest(MessageResponse.Create(CommonErrors.JobNotValid));
+                //}
+
+                //if (job.key_result == null)
+                //{
+                //    return BadRequest(MessageResponse.Create(CommonErrors.JobKeyResultNull));
+                //}
+
+                //if (userId <= 0)
+                //{
+                //    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
+                //}
+                #endregion
+
+                #region Response                
+                var response = new ExaminationAnalysis();
+
+                //var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync2(job.key_result);
+                var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync2(job_id);
+
+                if (getDataProcessed == null)
+                {
+                    //var stream = await _s3Service.GetFileAsync(bucketName, "results-ok", job_id);
+                    //response = await _bl.ProcesarArchivoJsonAsync(stream, job.key_result, job.user_id);
+
+                    response = getDataProcessed;
+                }
+                else
+                {
+                    response = getDataProcessed;
+                }
+                #endregion
+
+                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+            }
+        }
+        #endregion
+        //POR ELIMINAR
         #region Guardar Análisis IA 
         [HttpPost("analysis")]
         [SwaggerOperation(
