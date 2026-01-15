@@ -1057,7 +1057,7 @@ namespace gomind_backend_api.BL
         #endregion
 
         #region Consultar analisis ya realizado por cada parametro   
-        public async Task<ExaminationAnalysis?> GetProcessedAnalysisResultsAsync(string fileKey, , int userId)
+        public async Task<ExaminationAnalysis?> GetProcessedAnalysisResultsAsync(string fileKey, int userId)
         {
             string decodedFileKey = WebUtility.UrlDecode(fileKey);
 

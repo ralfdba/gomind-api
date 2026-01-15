@@ -240,7 +240,7 @@ namespace gomind_backend_api.Controllers
                 #region Response                
                 var response = new ExaminationAnalysis();
                
-                var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync(job.key_result);
+                var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync(job.key_result, userId);
 
                 if (getDataProcessed == null)
                 {
