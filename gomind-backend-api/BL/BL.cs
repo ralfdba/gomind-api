@@ -1057,20 +1057,17 @@ namespace gomind_backend_api.BL
         #endregion
 
         #region Consultar analisis ya realizado por cada parametro   
-        public async Task<ExaminationAnalysis?> GetProcessedAnalysisResultsAsync(string fileKey)
+        public async Task<ExaminationAnalysis?> GetProcessedAnalysisResultsAsync(string fileKey, , int userId)
         {
             string decodedFileKey = WebUtility.UrlDecode(fileKey);
 
             var dbResult = await _dbConnection.ExecuteQueryAsync(
-                    "CALL api_get_examination_by_file_key(@p_file_key);",
+                    "CALL api_get_examination_by_file_key(@p_file_key, @p_user_id);",
                     reader => new
                     {
                         AnalysisJson = reader.IsDBNull("analysis_results") ? null : reader.GetString("analysis_results")                   
                     },
-                    new Dictionary<string, object>
-                    {           
-                        { "p_file_key", decodedFileKey }
-                    }
+                    new Dictionary<string, object> { { "p_file_key", decodedFileKey }, { "p_user_id", userId } }
                 );
 
             var rawJson = dbResult?.FirstOrDefault()?.AnalysisJson;
