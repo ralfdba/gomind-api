@@ -24,6 +24,7 @@ using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -50,8 +51,8 @@ namespace gomind_backend_api.BL
         private readonly IMariaDbConnection _dbConnection;
         private readonly IHealthResourcesService _healthResourcesService;
         private readonly INotificacion _notificacion;
-        private readonly BcryptServices _bcrypt;
-       
+        private readonly BcryptServices _bcrypt;        
+
         public BL(ILogger<BL> logger, IMariaDbConnection dbConnection, IHealthResourcesService healthResourcesService, INotificacion notificacion)
         {
             _logger = logger;
@@ -963,114 +964,100 @@ namespace gomind_backend_api.BL
         }
         #endregion
 
-        #region Procesar archivo y analisis por parametros        
-        public async Task<List<AnalysisResult>> ProcesarArchivoJsonAsync(Stream jsonStream, string fileKey, int userId)
+        #region Procesar archivo y analisis por parametros      
+        public async Task<ExaminationAnalysis> ProcesarArchivoJsonAsync(Stream jsonStream, string fileKey, int userId, int fileType, string jobId)
         {
-            var resultados = new List<AnalysisResult>();
+            TimeZoneInfo chileTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Chile/Continental");
+            DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, chileTimeZone);
 
-            var parametros = await GetParametersFromJsonAsync(jsonStream);
+            // 1. Extraer datos brutos del JSON (Ruta en S3 / Archivo)
+            var rawParameters = await GetParametersFromJsonAsync2(jsonStream);
 
-            foreach (var param in parametros)
+            // 2. Preparar el objeto de respuesta final
+            var finalAnalysis = new ExaminationAnalysis
             {
-                await _dbConnection.ExecuteNonQueryAsync(
-                    "CALL api_set_parameter_results(@p_nombre, @p_key_result, @p_valor, @p_file_key, @p_user_id);",
-                    new Dictionary<string, object>
-                    {
-                        { "p_nombre", param.Nombre },
-                        { "p_key_result", param.KeyResult },
-                        { "p_valor", param.Dato },
-                        { "p_file_key", fileKey },
-                        { "p_user_id", userId }
-                    });    
-            }
-            resultados = await GetProcessedAnalysisResultsAsync(fileKey);
+                Metadata = new AnalysisMetadata
+                {
+                    JobId = jobId,
+                    AnalysisDate = chileTime.ToString("dd/MM/yyyy HH:mm:ss"),
+                    ParametersFoundCount = rawParameters.Count
+                }
+            };
+            // 3. Obtener configuración maestra de parámetros desde la BD (Optimizado: una sola consulta)
+            var dbParameters = await _dbConnection.ExecuteQueryAsync(
+                "SELECT id, name, uuid, description, unit_of_measure, keys_results FROM parameters",
+                reader => new
+                {                   
+                    Name = reader.GetString("name").ToLower().Trim(),
+                    Uid = reader.IsDBNull("uuid") ? null : reader.GetGuid("uuid").ToString(),
+                    Description = reader.IsDBNull("description") ? "" : reader.GetString("description"),
+                    Unit = reader.IsDBNull("unit_of_measure") ? "" : reader.GetString("unit_of_measure"),                    
+                    Config = JsonSerializer.Deserialize<List<ParameterConfig>>(
+                        reader.IsDBNull("keys_results") ? "[]" : reader.GetString("keys_results")
+                    )
+                }, null);
 
-            return resultados;
+            // 4. Procesar y Evaluar cada parámetro encontrado
+            foreach (var raw in rawParameters)
+            {
+                // Buscamos coincidencia en nuestra base de datos por nombre
+                var dbParam = dbParameters.FirstOrDefault(p => p.Name.ToLower() == raw.Parameter.ToLower().Trim());
+
+                var paramDto = new AnalysisParameter
+                {                    
+                    Uid = dbParam?.Uid ?? Guid.NewGuid().ToString(),
+                    Name = raw.Parameter,
+                    Description = dbParam?.Description ?? $"Análisis de {raw.Parameter}",
+                    UnitOfMeasure = !string.IsNullOrEmpty(raw.Unit) ? raw.Unit : (dbParam?.Unit ?? ""),
+                    Analysis = new List<AnalysisMetric>            
+                    {
+                        new AnalysisMetric
+                        {
+                            Key = "Valor",
+                            Value = raw.Value,
+                            ReferenceRanges = raw.ReferenceRanges
+                        }
+                    }
+                };
+
+                // 5. Aplicar Evaluación de Rangos
+                // Convertimos el string "raw.Value" a decimal para la comparativa
+                if (TryParseValor2(JsonSerializer.SerializeToElement(raw.Value), out decimal valorNumerico))
+                {
+                    bool isInRange = RangeEvaluator.IsValueValid(valorNumerico, raw.ReferenceRanges, dbParam?.Config);
+
+                    // !false == true -> Se agrega a la lista de parámetros fuera de rango.
+                    if (!isInRange)
+                    {
+                        finalAnalysis.ParametersOutOfRange.Add(paramDto);
+                    }
+                }
+
+                finalAnalysis.ParametersFound.Add(paramDto);
+            }
+
+            // 6. Actualizar contadores de metadata
+            finalAnalysis.Metadata.ParametersOutOfRangeCount = finalAnalysis.ParametersOutOfRange.Count;
+
+            // 7. Persistir el resultado final en MariaDB
+            string finalJsonToDb = JsonSerializer.Serialize(finalAnalysis);
+
+            await _dbConnection.ExecuteNonQueryAsync(
+                "CALL api_insert_examination_result(@p_file_type, @p_file_key, @p_analysis_results, @p_user_id);",
+                new Dictionary<string, object>
+                {
+                    { "p_file_type", fileType }, 
+                    { "p_file_key", fileKey },
+                    { "p_analysis_results", finalJsonToDb },
+                    { "p_user_id", userId }
+                });
+
+            return finalAnalysis;
         }
         #endregion
 
-        #region Consultar analisis ya realizado por cada parametro
-        public async Task<List<AnalysisResult>> GetProcessedAnalysisResultsAsync(string fileKey)
-        {       
-
-            var spResults = await _dbConnection.ExecuteQueryAsync(
-                "CALL api_get_parameter_results(@p_file_key);",
-                reader => new SpParameterResult
-                {
-                    // Campos de la tabla PARAMETER_RESULTS
-                    parameter_result_id = reader.GetInt32("parameter_result_id"),                    
-                    file_key = reader.GetString("file_key"),
-                    value = reader.GetDecimal("value"),
-                    analysis_results = reader.IsDBNull("analysis_results") ? null : reader.GetString("analysis_results"),
-
-                    // Campos de la tabla REFERENCE_RANGE
-                    reference_range_id = reader.GetInt32("reference_range_id"),                 
-                    min_value = reader.IsDBNull("min_value") ? 0.00M : reader.GetDecimal("min_value"), 
-                    max_value = reader.IsDBNull("max_value") ? 0.00M : reader.GetDecimal("max_value"), 
-                    condition_type = reader.GetInt32("condition_type"),
-                    condition_value = reader.IsDBNull("condition_value") ? 0.00M : reader.GetDecimal("condition_value"), 
-                    reference_range_key_result = reader.GetString("reference_range_key_result"),
-                    condition_type_description = reader.GetString("condition_type_description"),
-
-                    // Campos de la tabla PARAMETER
-                    parameter_id = reader.GetInt32("parameter_id"),
-                    parameter_name = reader.GetString("parameter_name"),
-                    parameter_description = reader.GetString("parameter_description"),
-                    unit_of_measure = reader.GetString("unit_of_measure"),
-                    parameter_uuid = reader.IsDBNull("parameter_uuid") ? null : reader.GetGuid("parameter_uuid").ToString(),
-                },
-                new Dictionary<string, object>
-                {
-                    { "p_file_key", fileKey }
-                }
-            );
-
-            if (spResults == null || !spResults.Any())
-            {
-                return new List<AnalysisResult>();
-            }
-
-            var groupedResults = spResults
-                .GroupBy(r => r.parameter_id)
-                .Select(group =>
-                {
-                    var firstRow = group.First();
-
-                    return new AnalysisResult
-                    {
-                        Parameter = new ParametersAnalysis
-                        {
-                            Id = firstRow.parameter_id,
-                            Uuid = firstRow.parameter_uuid,
-                            Name = firstRow.parameter_name,
-                            Description = firstRow.parameter_description,
-                            UnitOfMeasure = firstRow.unit_of_measure
-                        },
-                        Analysis = new AnalysisDetails
-                        {
-                            Value = firstRow.value,
-                            ReferenceRanges = group.Select(item => new ReferenceRangeAnalysis
-                            {
-                                ConditionType = item.condition_type_description,
-                                ConditionValue = item.condition_value,
-                                MinValue = item.min_value,
-                                MaxValue = item.max_value,
-                                KeyResult = item.reference_range_key_result
-                            }).ToList(),
-                            Results = group.Select(item => new ResultDetail
-                            {
-                                Id = item.parameter_result_id,
-                                Recommendation = item.analysis_results
-                            }).ToList()
-                        }
-                    };
-                })
-                .ToList();
-
-            return groupedResults;
-        }
-
-        public async Task<ExaminationAnalysis?> GetProcessedAnalysisResultsAsync2(string fileKey)
+        #region Consultar analisis ya realizado por cada parametro   
+        public async Task<ExaminationAnalysis?> GetProcessedAnalysisResultsAsync(string fileKey)
         {
             string decodedFileKey = WebUtility.UrlDecode(fileKey);
 
@@ -1106,33 +1093,99 @@ namespace gomind_backend_api.BL
         }
         #endregion
 
-        #region Guardar Ai Recommendation
-        public async Task<MessageResponse> CreateUserRecommendationAsync(AnalysisRequest request, int userId)
-        {          
-            var recommendationData = await _dbConnection.ExecuteQueryAsync<AnalysisSaveResponse>(
-                "CALL api_insert_user_recommendation(@p_user_id, @p_result_id, @p_recommendation);",
-                reader => new AnalysisSaveResponse
-                {
-                    NewRecommendationId = reader.GetInt32("new_recommendation_id")
+        #region Listar examenes del usuario
+        public async Task<List<UserExaminationList>> GetUserExaminationsAsync(int userId, int fileType)
+        {
+            // Manejo de ZoneId para AWS (Linux) y Local (Windows)
+            string tzId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? "Pacific SA Standard Time"
+                : "America/Santiago";
+            var chileTimeZone = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+
+            // Ejecución del SP con los parámetros correctos
+            var examinations = await _dbConnection.ExecuteQueryAsync(
+                "CALL api_get_user_examinations(@p_user_id, @p_file_type)",
+                reader => {
+                    // Conversión de fecha de UTC (DB) a Chile
+                    DateTime utcDate = reader.GetDateTime("created_at");
+                    DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, chileTimeZone);
+
+                    return new UserExaminationList
+                    {
+                        Uid = reader.IsDBNull("uuid") ? null : reader.GetGuid("uuid").ToString(),                        
+                        FileType = reader.GetInt32("file_type"),
+                        FileKey = reader.GetString("file_key"),
+                        // Formato solicitado dd-mm-yyyy
+                        CreatedAt = chileTime.ToString("dd-MM-yyyy HH:mm:ss")
+                    };
                 },
                 new Dictionary<string, object>
                 {
-                    { "p_user_id", userId },               
-                    { "p_result_id", request.ResultId },                
-                    { "p_recommendation", request.AiRecommendation }
+                    { "p_user_id", userId },
+                    { "p_file_type", fileType }
                 }
             );
-            if (recommendationData.FirstOrDefault().NewRecommendationId > 0 ) 
-            {
-                return MessageResponse.Create(CommonSuccess.GenericCreateSuccess1, true);
-            }
-            else 
-            {
-                return MessageResponse.Create(CommonErrors.GenericNoValid2);
-            }
 
+            return examinations;
         }
         #endregion
+
+        #region Obtener examenes del usuario por su ID
+        public async Task<UserExaminationDetail> GetExaminationDetailAsync(string uuid, int userId)
+        {
+            string tzId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Pacific SA Standard Time" : "America/Santiago";
+            var chileTimeZone = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+
+            var result = await _dbConnection.ExecuteQueryAsync(
+                "CALL api_get_examination_detail(@p_uuid, @p_user_id)",
+                reader => {
+                    DateTime utcDate = reader.GetDateTime("created_at");
+                    DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, chileTimeZone);
+
+                    return new UserExaminationDetail
+                    {
+                        Uid = reader.IsDBNull("uuid") ? null : reader.GetGuid("uuid").ToString(),
+                        FileType = reader.GetInt32("file_type"),
+                        FileKey = reader.GetString("file_key"),
+                        CreatedAt = chileTime.ToString("dd-MM-yyyy HH:mm:ss"),
+                        AnalysisResults = JsonSerializer.Deserialize<ExaminationAnalysis>(reader.GetString("analysis_results"))
+                    };
+                },
+                new Dictionary<string, object> { { "p_uuid", uuid }, { "p_user_id", userId } }
+            );
+
+            return result.FirstOrDefault();
+        }
+        #endregion
+
+        #region Obtener examenes del usuario por su File Key
+        public async Task<UserExaminationDetail> GetExaminationByFileKeyAsync(string fileKey, int userId)
+        {
+            string decodedFileKey = WebUtility.UrlDecode(fileKey);
+            string tzId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Pacific SA Standard Time" : "America/Santiago";
+            var chileTimeZone = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+
+            var result = await _dbConnection.ExecuteQueryAsync(
+                "CALL api_get_examination_by_file_key(@p_file_key, @p_user_id)",
+                reader => {
+                    DateTime utcDate = reader.GetDateTime("created_at");
+                    DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, chileTimeZone);
+
+                    return new UserExaminationDetail
+                    {
+                        Uid = reader.GetGuid("uuid").ToString(),
+                        FileType = reader.GetInt32("file_type"),
+                        FileKey = reader.GetString("file_key"),
+                        CreatedAt = chileTime.ToString("dd-MM-yyyy HH:mm:ss"),                        
+                        AnalysisResults = JsonSerializer.Deserialize<ExaminationAnalysis>(reader.GetString("analysis_results"))
+                    };
+                },
+                new Dictionary<string, object> { { "p_file_key", decodedFileKey }, { "p_user_id", userId } }
+            );
+
+            return result.FirstOrDefault();
+        }
+        #endregion        
 
         #region Obtener Parameters Results por User Id
         public async Task<IEnumerable<ParameterResult>> GetParameterResults(int userId, int? parameterId)
@@ -1345,6 +1398,47 @@ namespace gomind_backend_api.BL
 
             return parametros;
         }
+        public async Task<List<RawParameter>> GetParametersFromJsonAsync2(Stream jsonStream)
+        {
+            var list = new List<RawParameter>();
+            using var doc = await JsonDocument.ParseAsync(jsonStream);
+
+            foreach (var section in doc.RootElement.EnumerateObject())
+            {
+                string sectionName = section.Name; // Ej: "HEMOGRAMA VHS"
+
+                // Cada sección es un array de objetos según tu estándar
+                if (section.Value.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var entry in section.Value.EnumerateArray())
+                    {
+                        foreach (var parameter in entry.EnumerateObject())
+                        {
+                            // parameter.Name ej: "Hemoglobina"
+                            // parameter.Value ej: { "Valor": "13.4", "Unidad...": "g/dL", "Valor_Ref": [...] }
+
+                            var raw = new RawParameter
+                            {
+                                Parameter = sectionName,
+                                KeyResult = parameter.Name,
+                                Value = parameter.Value.GetProperty("Valor").ToString(),
+                                Unit = parameter.Value.TryGetProperty("Unidad de medida", out var u) ? u.ToString() : "",
+                            };
+
+                            // Extraer Rangos de Referencia
+                            if (parameter.Value.TryGetProperty("Valor_Ref", out var refs))
+                            {
+                                raw.ReferenceRanges = refs.EnumerateArray().Select(r => r.ToString()).ToList();
+                            }
+
+                            list.Add(raw);
+                        }
+                    }
+                }
+            }
+            return list;
+        }       
+
         private bool TryParseValor(JsonElement valorElement, out decimal valor)
         {
             valor = 0;
@@ -1364,6 +1458,25 @@ namespace gomind_backend_api.BL
             catch { }
 
             return false;
+        }
+
+        private bool TryParseValor2(JsonElement element, out decimal valor)
+        {
+            valor = 0;
+            string? rawValue = element.ValueKind == JsonValueKind.Number
+                ? element.GetRawText()
+                : element.GetString();
+
+            if (string.IsNullOrWhiteSpace(rawValue)) return false;
+
+            // Limpieza agresiva: "13,4 g/dL" -> "13.4"
+            var cleanValue = rawValue
+                .Replace(",", ".")
+                .Replace("%", "")
+                .Split(' ')[0] // Toma solo el número si viene "13.4 g/dL"
+                .Trim();
+
+            return decimal.TryParse(cleanValue, NumberStyles.Any, CultureInfo.InvariantCulture, out valor);
         }
 
         #endregion

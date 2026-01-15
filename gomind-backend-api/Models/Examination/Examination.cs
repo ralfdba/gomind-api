@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using gomind_backend_api.Models.Parameters;
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -60,6 +61,22 @@ namespace gomind_backend_api.Models.Examination
         {
             public int NewRecommendationId { get; set; }
 
+        }
+
+        public class UserExaminationList
+        {
+            public string Uid { get; set; }
+            public int FileType { get; set; }
+            public string FileKey { get; set; }
+            public string CreatedAt { get; set; } 
+        }
+        public class UserExaminationDetail
+        {
+            public string Uid { get; set; }
+            public int FileType { get; set; }
+            public string FileKey { get; set; }
+            public string CreatedAt { get; set; }            
+            public ExaminationAnalysis AnalysisResults { get; set; } 
         }
 
     }

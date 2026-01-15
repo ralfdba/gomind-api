@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Text.Json.Serialization;
 using static gomind_backend_api.Models.Examination.Examination;
 
@@ -202,22 +203,20 @@ namespace gomind_backend_api.Models.Parameters
         public string JobId { get; set; } = string.Empty;
 
         [JsonPropertyName("analysis_date")]
-        public DateTime AnalysisDate { get; set; } = DateTime.UtcNow;
+        public string AnalysisDate { get; set; } = string.Empty;
 
         [JsonPropertyName("parameters_found_count")]
         public int ParametersFoundCount { get; set; }
 
-        [JsonPropertyName("out_of_range_count")]
-        public int OutOfRangeCount { get; set; }
+        [JsonPropertyName("parameters_out_of_range_count")]
+        public int ParametersOutOfRangeCount { get; set; }
     }
 
     public class AnalysisParameter
-    {
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
+    {        
 
-        [JsonPropertyName("uuid")]
-        public string Uuid { get; set; } = string.Empty;
+        [JsonPropertyName("uid")]
+        public string Uid { get; set; } = string.Empty;
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
@@ -243,5 +242,132 @@ namespace gomind_backend_api.Models.Parameters
         [JsonPropertyName("reference_ranges")]
         public List<string> ReferenceRanges { get; set; } = new();
     }
+
+    public class RawParameter
+    {
+        public string Parameter { get; set; }
+        public string KeyResult { get; set; }
+        public string Value { get; set; }
+        public string Unit { get; set; }
+        public List<string> ReferenceRanges { get; set; } = new();
+    }
+
+    public class ParameterConfig
+    {
+        [JsonPropertyName("key")]
+        public string Key { get; set; } = string.Empty;
+
+        [JsonPropertyName("invalid_ranges")]
+        public List<string>? InvalidRanges { get; set; }
+    }
+
+    public static class RangeEvaluator
+    {
+        public static bool IsValueValid(decimal value, List<string> referenceRanges, List<ParameterConfig>? configs)
+        {
+            if (referenceRanges == null || !referenceRanges.Any()) return true;
+
+            var invalidPrefixes = configs?
+                .SelectMany(c => c.InvalidRanges ?? new List<string>())
+                .Select(r => r.ToLowerInvariant().Trim())
+                .ToList() ?? new List<string>();
+
+            bool foundNormalRange = false;
+            bool valueIsInNormalRange = false;
+
+            foreach (var rangeStr in referenceRanges)
+            {
+                var lowerRange = rangeStr.ToLowerInvariant();
+                var parts = lowerRange.Split(':');
+                string label = parts.Length > 1 ? parts[0].Trim() : "";
+                string rangeCondition = parts.Last().Trim();
+
+                // 1. CHEQUEO DE RIESGOS CONFIGURADOS (Prioridad máxima)
+                if (invalidPrefixes.Any(p => label.Contains(p)))
+                {
+                    if (IsValueMatchingCondition(value, rangeCondition))
+                    {
+                        return false; 
+                    }
+                }
+
+                // 2. CHEQUEO DE NORMALIDAD
+                if (label.Contains("normal") || string.IsNullOrEmpty(label))
+                {
+                    foundNormalRange = true;
+                    if (IsValueMatchingCondition(value, rangeCondition))
+                    {
+                        valueIsInNormalRange = true;
+                    }
+                }
+            }
+            
+            // Si se encuentra un rango normal y el valor NO está en él -> Invalido
+            if (foundNormalRange && !valueIsInNormalRange)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsValueMatchingCondition(decimal value, string conditionStr)
+        {
+            try
+            {
+                // Limpieza robusta
+                var cleanCond = conditionStr.ToLower()
+                    .Replace("%", "")
+                    .Replace("g/dl", "")
+                    .Replace("mg/dl", "")
+                    .Replace("mm/hora", "")
+                    .Replace("x10^3/mm3", "")
+                    .Replace("x10^12/ul", "")
+                    .Trim();
+
+                // 1. Rango con guion (ej: "11.5 - 14.5")
+                if (cleanCond.Contains("-"))
+                {
+                    var parts = cleanCond.Split('-');
+                    if (parts.Length == 2)
+                    {
+                        decimal min = ParseDecimal(parts[0].Trim());
+                        decimal max = ParseDecimal(parts[1].Trim());
+                        return value >= min && value <= max;
+                    }
+                }
+
+                // 2. Operadores de comparación (Importante el orden de >= antes de >)
+                if (cleanCond.Contains(">="))
+                    return value >= ParseDecimal(cleanCond.Replace(">=", ""));
+
+                if (cleanCond.Contains("<="))
+                    return value <= ParseDecimal(cleanCond.Replace("<=", ""));
+
+                if (cleanCond.Contains(">"))
+                    return value > ParseDecimal(cleanCond.Replace(">", ""));
+
+                if (cleanCond.Contains("<"))
+                    return value < ParseDecimal(cleanCond.Replace("<", ""));
+
+                // 3. Caso de valor único (ej: "120")
+                if (decimal.TryParse(cleanCond, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal singleValue))
+                {
+                    return value == singleValue;
+                }
+            }
+            catch
+            {                
+                return false;
+            }
+
+            return false;
+        }
+        private static decimal ParseDecimal(string input)
+        {
+            return decimal.Parse(input.Trim(), CultureInfo.InvariantCulture);
+        }
+    }
+
     #endregion
 }

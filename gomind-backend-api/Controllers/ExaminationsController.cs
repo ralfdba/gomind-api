@@ -10,6 +10,7 @@ using gomind_backend_api.Models.Products;
 using gomind_backend_api.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Data;
@@ -189,79 +190,9 @@ namespace gomind_backend_api.Controllers
         }
         #endregion
         
-        #region Consultar parametros obtenidos de la IA 
+        #region Consultar parametros obtenidos de la IA       
+
         [HttpGet("analysis-job/{job_id}")]
-        [SwaggerOperation(
-            Summary = "Obtiene los parametros cuando el Job esta en Status Completado",
-            Description = "Permite obtener los parametros extraidos del examen si el Status del Job es Completado. Tras obtener los parametros, compara las referencias de rangos parametrizadas a estos parametros y si estan fuera de rango, se devolveran en el response de este servicio.",
-            Tags = new[] { "Examinations" }
-        )]
-        public async Task<ActionResult<List<AnalysisResult>>> GetAnalysisIa(string job_id)
-        {
-            #region Inicio Log Information
-            //Se obtiene el UserId del token
-            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            _logger.LogInformation("Request-Job ID: {job_id}", job_id);
-            #endregion
-
-            try
-            {
-                #region Validaciones Iniciales
-                if (job_id == null)
-                {
-                    return BadRequest(MessageResponse.Create(CommonErrors.BadRequest1));
-                }
-                
-                var job = await _dynamoDbService.GetAsync<Job>(job_id);
-
-                if (job == null)
-                {
-                    return BadRequest(MessageResponse.Create(CommonErrors.JobNotFound));
-                }
-                
-                if (job.job_status != JobStatus.Completed || !job.success)
-                {
-                    return BadRequest(MessageResponse.Create(CommonErrors.JobNotValid));
-                }
-
-                if (job.key_result == null)
-                {
-                    return BadRequest(MessageResponse.Create(CommonErrors.JobKeyResultNull));
-                }
-
-                 if (userId <= 0)
-                {
-                    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
-                }
-                #endregion
-               
-                #region Response                
-                var response = new List<AnalysisResult>();
-
-                var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync(job.key_result);
-                
-                if (getDataProcessed == null || getDataProcessed.Count <= 0) 
-                {
-                    var stream = await _s3Service.GetFileAsync(bucketName, "results-ok", job_id);
-                    response = await _bl.ProcesarArchivoJsonAsync(stream, job.key_result, job.user_id);
-                }
-                else
-                {
-                    response = getDataProcessed;
-                }        
-                #endregion                   
-
-                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error");
-                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
-            }
-        }
-
-        [HttpGet("analysis-job2/{job_id}")]
         [SwaggerOperation(
             Summary = "Obtiene los parametros cuando el Job esta en Status Completado",
             Description = "Permite obtener los parametros extraidos del examen si el Status del Job es Completado. Tras obtener los parametros, compara las referencias de rangos parametrizadas a estos parametros y si estan fuera de rango, se devolveran en el response de este servicio.",
@@ -283,41 +214,38 @@ namespace gomind_backend_api.Controllers
                     return BadRequest(MessageResponse.Create(CommonErrors.BadRequest1));
                 }
 
-                //var job = await _dynamoDbService.GetAsync<Job>(job_id);
+                var job = await _dynamoDbService.GetAsync<Job>(job_id);
 
-                //if (job == null)
-                //{
-                //    return BadRequest(MessageResponse.Create(CommonErrors.JobNotFound));
-                //}
+                if (job == null)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.JobNotFound));
+                }
 
-                //if (job.job_status != JobStatus.Completed || !job.success)
-                //{
-                //    return BadRequest(MessageResponse.Create(CommonErrors.JobNotValid));
-                //}
+                if (job.job_status != JobStatus.Completed || !job.success)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.JobNotValid));
+                }
 
-                //if (job.key_result == null)
-                //{
-                //    return BadRequest(MessageResponse.Create(CommonErrors.JobKeyResultNull));
-                //}
+                if (job.key_result == null)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.JobKeyResultNull));
+                }
 
-                //if (userId <= 0)
-                //{
-                //    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
-                //}
+                if (userId <= 0)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
+                }
                 #endregion
 
                 #region Response                
                 var response = new ExaminationAnalysis();
-
-                //var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync2(job.key_result);
-                var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync2(job_id);
+               
+                var getDataProcessed = await _bl.GetProcessedAnalysisResultsAsync(job.key_result);
 
                 if (getDataProcessed == null)
                 {
-                    //var stream = await _s3Service.GetFileAsync(bucketName, "results-ok", job_id);
-                    //response = await _bl.ProcesarArchivoJsonAsync(stream, job.key_result, job.user_id);
-
-                    response = getDataProcessed;
+                    var stream = await _s3Service.GetFileAsync(bucketName, "results-ok", job_id);
+                    response = await _bl.ProcesarArchivoJsonAsync(stream, job.key_result, job.user_id, job.file_type, job.id);                    
                 }
                 else
                 {
@@ -335,44 +263,31 @@ namespace gomind_backend_api.Controllers
             }
         }
         #endregion
-        //POR ELIMINAR
-        #region Guardar Análisis IA 
-        [HttpPost("analysis")]
+
+        #region Consultar los examenes del usuario en session
+        [HttpGet("analysis-results")]
         [SwaggerOperation(
-            Summary = "Guardar parametros analizados fuera de rango",
-            Description = "Permite guardar el parametro que estaba fuera de rango tras el análisis.",
+            Summary = "Lista los exámenes ya analizados del usuario en sesión",
+            Description = "Permite listar todos los exámenes que el usuario ha subido para anánlisis de parametros.",
             Tags = new[] { "Examinations" }
         )]
-        public async Task<ActionResult<MessageResponse>> SaveAnalysis([FromBody] AnalysisRequest request)
+        public async Task<ActionResult<List<UserExaminationList>>> GetHistoryExaminationUser([FromQuery] int fileType = 0)
         {
-            #region Inicio Log Information
-            var serializedRequest = JsonSerializer.Serialize(request);
-            _logger.LogInformation("Request: {RequestJson}", serializedRequest);
-            #endregion
-
             try
             {
-                #region Valdaciones Iniciales
+                #region Inicio Log Information
+                //Se obtiene el UserId del token
+                int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                _logger.LogInformation("User: {userId}", userId);
+                #endregion
 
-                if (!ModelState.IsValid) {
-                    return BadRequest(ModelState);
-                }
-
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                if (userId <= 0)
                 {
-                    return Ok(MessageResponse.Create(CommonErrors.UserTokenNoValid1));
+                    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
                 }
-                #endregion
-
-                #region Response
-
-                var response = await _bl.CreateUserRecommendationAsync(request, int.Parse(userIdClaim.Value));
-
-                #endregion
                 
-                _logger.LogInformation("Response: {RequestJson}", JsonSerializer.Serialize(response));
-                return Ok(response);
+                var results = await _bl.GetUserExaminationsAsync(userId, fileType);
+                return Ok(results);
             }
             catch (Exception ex)
             {
@@ -381,5 +296,69 @@ namespace gomind_backend_api.Controllers
             }
         }
         #endregion
+
+        #region Consultar los examenes por su id
+        [HttpGet("analysis-results/result-id/{uid}")]
+        [SwaggerOperation(
+            Summary = "Muestra los resultados del exámen ya analizados del usuario en sesión",
+            Description = "Permite obtener los resultados del exámen del usuario en sesión segun su uid.",
+            Tags = new[] { "Examinations" }
+        )]
+        public async Task<ActionResult<UserExaminationDetail>> GetExaminationDetail(string uid)
+        {
+            try
+            {
+                #region Inicio Log Information
+                //Se obtiene el UserId del token
+                int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                _logger.LogInformation("User: {userId}", userId);
+                #endregion
+                if (userId <= 0)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
+                }
+
+                var result = await _bl.GetExaminationDetailAsync(uid, userId);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+            }
+        }
+        #endregion
+
+        #region Consultar los examenes por su File Key
+        [HttpGet("analysis-results/file-key/{fileKey}")]
+        [SwaggerOperation(
+            Summary = "Muestra los resultados del exámen ya analizados del usuario en sesión.",
+            Description = "Permite obtener los resultados del exámen del usuario en sesión segun su file key.",
+            Tags = new[] { "Examinations" }
+        )]
+        public async Task<ActionResult<UserExaminationDetail>> GetByFileKey(string fileKey)
+        {
+            try
+            {
+                #region Inicio Log Information
+                //Se obtiene el UserId del token
+                int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                _logger.LogInformation("User: {userId}", userId);
+                #endregion
+                if (userId <= 0)
+                {
+                    return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
+                }
+                var result = await _bl.GetExaminationByFileKeyAsync(fileKey, userId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+            }
+        }
+        #endregion       
     }
 }
