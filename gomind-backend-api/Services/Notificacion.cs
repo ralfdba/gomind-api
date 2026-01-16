@@ -21,7 +21,7 @@ namespace Services
                 List<Reemplazar> reemplazos = new List<Reemplazar>();                
                 reemplazos.Add(new Reemplazar() { TextoBuscar = "[CODIGO]", TextoReemplazar = codigoVerificacion.ToString() });
                 
-                _envioCorreoService.Enviar(reemplazos, "Código de autenticación acceso Gomind", destinatarios, "envio-codigo.html");
+                _envioCorreoService.Enviar(reemplazos, $"Tu código de acceso a Gomind: {codigoVerificacion}", destinatarios, "envio-codigo.html");
                 
                 result.IsOK = true;
             }

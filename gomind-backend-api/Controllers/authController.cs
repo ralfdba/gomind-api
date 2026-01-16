@@ -134,7 +134,7 @@ namespace gomind_backend_api.Controllers
 
                 if (dataUser == null)
                 {
-                    return Ok(MessageResponse.Create(CommonErrors.InvalidCredentials));
+                    return Ok(MessageResponse.Create(CommonErrors.InvalidCredentialsWSP));
                 }
 
                 // Obtener productos a través de la clase BL
