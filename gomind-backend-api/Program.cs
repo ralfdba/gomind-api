@@ -115,7 +115,7 @@ builder.Services.AddScoped<BL>();
 
 #region Cron Jobs
 // 1. Obtener la configuración del cron
-var cronSchedule = builder.Configuration["QuartzConfigs:TestJobCron"] ?? "0 * * ? * * *";
+var cronSchedule = builder.Configuration["QuartzConfigs:TestJobCron"] ?? "0 0 * ? * * *";
 
 // 2. Configurar Quartz
 builder.Services.AddQuartz(q =>
