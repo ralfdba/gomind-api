@@ -8,10 +8,12 @@ using gomind_backend_api.JWT;
 using gomind_backend_api.Models.Errors;
 using gomind_backend_api.Models.Utils;
 using gomind_backend_api.Resources;
+using gomind_backend_api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Quartz;
 using Services;
 using System.Text;
 
@@ -109,6 +111,28 @@ builder.Services.AddScoped<IDynamoDbService, DynamoDbService>();
 
 #region BL
 builder.Services.AddScoped<BL>();
+#endregion
+
+#region Cron Jobs
+// 1. Obtener la configuración del cron
+var cronSchedule = builder.Configuration["QuartzConfigs:TestJobCron"] ?? "0 * * ? * * *";
+
+// 2. Configurar Quartz
+builder.Services.AddQuartz(q =>
+{   
+    var jobKey = new JobKey("TestLogJob");
+
+    q.AddJob<CronJobs>(opts => opts.WithIdentity(jobKey));
+
+    // Crear el Trigger
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("TestLogJob-trigger")
+        .WithCronSchedule(cronSchedule));
+});
+
+// 3. Agregar el servicio de hosting de Quartz
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 #endregion
 
 #region Resources Services

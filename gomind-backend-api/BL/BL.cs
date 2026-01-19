@@ -47,11 +47,17 @@ namespace gomind_backend_api.BL
     #endregion
     public class BL
     {
+        public enum AppointmentState { Solicitado = 1, Confirmada = 2, Cancelada = 3 }
         private readonly ILogger<BL> _logger;
         private readonly IMariaDbConnection _dbConnection;
         private readonly IHealthResourcesService _healthResourcesService;
         private readonly INotificacion _notificacion;
-        private readonly BcryptServices _bcrypt;        
+        private readonly BcryptServices _bcrypt;
+        public static readonly TimeZoneInfo _tzChile = TimeZoneInfo.FindSystemTimeZoneById(
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "Pacific SA Standard Time"
+            : "America/Santiago"    
+            );
 
         public BL(ILogger<BL> logger, IMariaDbConnection dbConnection, IHealthResourcesService healthResourcesService, INotificacion notificacion)
         {
@@ -292,7 +298,9 @@ namespace gomind_backend_api.BL
         #region Agendar cita a usuario
         public async Task<AppointmentsResponse> CreateAppointmentByUser(AppointmentsRequest request, int userId)
         {
-           
+            var localDateTime = DateTime.SpecifyKind(request.DateTime, DateTimeKind.Unspecified);
+            var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(localDateTime, BL._tzChile);
+            
             var appointmentData = await _dbConnection.ExecuteQueryAsync<AppointmentsResponse>(               
                 "CALL api_insert_users_appointment(@p_users_id, @p_schedule_day, @p_health_provider_id, @p_product_id)",
                 reader => new AppointmentsResponse
@@ -302,7 +310,7 @@ namespace gomind_backend_api.BL
                 new Dictionary<string, object>              
                 {
                     { "p_users_id", userId },
-                    { "p_schedule_day", request.DateTime },
+                    { "p_schedule_day", utcDateTime },
                     { "p_health_provider_id", request.HealthProviderId },
                     { "p_product_id", request.ProductId }
                 }
@@ -314,20 +322,147 @@ namespace gomind_backend_api.BL
         #region Obtener citas del usuario
         public async Task<IEnumerable<AppointmentsByUser>> GetAppointmentsByUser(int userId)
         {
-            return await _dbConnection.ExecuteQueryAsync<AppointmentsByUser>(
+            return await _dbConnection.ExecuteQueryAsync(
                 "CALL api_get_appointments_by_user(@p_user_id)",
-                (reader) => new AppointmentsByUser
-                {
-                     AppointmentId = reader.GetInt32("id"),
-                     ScheduleDay = reader.GetDateTime("schedule_day"),
-                     HealthProvider = reader.GetString("health_provider"),
-                     Product = reader.GetString("product")
+                reader =>
+                {                    
+                    var utcDate = DateTime.SpecifyKind(reader.GetDateTime("schedule_day"),DateTimeKind.Utc);
+                    var chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, BL._tzChile);
+
+                    return new AppointmentsByUser
+                    {
+                        AppointmentId = reader.GetInt32("id"),
+                        ScheduleDay = chileTime.ToString("dd-MM-yyyy HH:mm"),
+                        State = AppointmentExtensions.GetStateName(reader.GetInt16("state")),
+                        HealthProvider = reader.GetString("health_provider"),
+                        Product = reader.GetString("product")
+                    };
                 },
                 new Dictionary<string, object>
-                {
+                {           
                     { "p_user_id", userId }
                 }
             );
+        }
+        #endregion
+
+        #region Obtener cita medica por ID
+        public async Task<AppointmentDetail> GetAppointmentByIdAsync(int id)
+        {            
+            var result = await _dbConnection.ExecuteQueryAsync("CALL api_get_appointment_by_id(@p_id)",
+           
+                reader => {
+                    var utcDate = DateTime.SpecifyKind(reader.GetDateTime("schedule_day"), DateTimeKind.Utc);
+                    var chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, BL._tzChile);
+
+                    int stateValue = reader.GetInt16("state");
+                    return new AppointmentDetail
+                    {
+                        AppointmentId = reader.GetInt32("id"),
+                        UserId = reader.GetInt32("users_id"),
+                        ScheduleDay = chileTime.ToString("dd-MM-yyyy HH:mm"),
+                        State = AppointmentExtensions.GetStateName(stateValue),
+                        HealthProvider = reader.GetString("health_provider"),
+                        Product = reader.GetString("product")
+                    };           
+                }, 
+                new Dictionary<string, object> 
+                { 
+                    { "p_id", id } 
+                }  
+            );          
+            return result.FirstOrDefault();
+        }
+
+        #endregion
+
+        #region Eliminar cita medica por ID
+        public async Task<MessageResponse> DeleteAppointmentAsync(int id)
+        {
+            try
+            {
+                var result = await _dbConnection.ExecuteNonQueryAsync(
+                    "CALL api_delete_appointment_by_id(@p_id)",
+                    new Dictionary<string, object> { { "p_id", id } }
+                );
+                //Se verifica si se efectuo el cambio en BBDD
+                if (result > 0)
+                {
+                    return MessageResponse.Create(CommonSuccess.GenericDeleteSuccess1, true);
+                }
+                else
+                {
+                    return MessageResponse.Create(CommonErrors.GenericNoValid3);
+                }
+            }
+            catch (Exception ex)
+            {
+                return MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message));
+            }           
+            
+        }
+
+        #endregion
+
+        #region Modificar estado de cita medica por ID
+        public async Task<MessageResponse> UpdateAppointmentStateAsync(int id, int newState)
+        {   
+            if (!Enum.IsDefined(typeof(AppointmentState), newState))            
+            {
+                return MessageResponse.Create(CommonErrors.GenericNoValid1);
+            }
+            try
+            {      
+                var result = await _dbConnection.ExecuteNonQueryAsync("CALL api_update_appointment_state(@p_id, @p_state)",                   
+                    
+                    new Dictionary<string, object>
+                    {                
+                        { "p_id", id },                
+                        { "p_state", newState }                      
+                    }  
+                );                
+                if (result > 0)
+                {
+                    return MessageResponse.Create(CommonSuccess.GenericUpdateSuccess1, true);
+                }
+                else
+                {
+                    return MessageResponse.Create(CommonErrors.GenericNoValid3);
+                }
+            }
+            catch (Exception ex)
+            {
+                return MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message));
+            }
+        }
+        #endregion
+
+        #region Obtener las citas medicas en estado 2 (Confirmada) dentro de la hora actual
+        public async Task<List<AppointmentsConfirmedByUsers>> GetAppointmentsCurrentHourAsync()
+        {     
+            var appointments = await _dbConnection.ExecuteQueryAsync(
+                "CALL api_get_appointments_current_hour()",
+                reader => {
+                    var utcDate = DateTime.SpecifyKind(reader.GetDateTime("schedule_day"), DateTimeKind.Utc);
+                    var chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, BL._tzChile);
+
+                    int stateValue = reader.GetInt16("state");
+
+                    return new AppointmentsConfirmedByUsers
+                    {
+                        AppointmentId = reader.GetInt32("id"),
+                        UserId = reader.GetInt32("users_id"),
+                        UserEmail = reader.GetString("user_email"),
+                        ScheduleDay = chileTime.ToString("dd-MM-yyyy HH:mm"),
+                        StateId = stateValue,
+                        StateName = AppointmentExtensions.GetStateName(stateValue),
+                        HealthProvider = reader.GetString("health_provider"),
+                        Product = reader.GetString("product")
+                    };
+                }
+            );
+
+            return appointments;
         }
         #endregion
 
@@ -722,8 +857,7 @@ namespace gomind_backend_api.BL
                     { "p_keys_results", keysResultsJson }
                 }            
                 );
-
-                //Se verifica si se efectuo el cambio en BBDD
+              
                 if (result > 0)
                 {
                     return MessageResponse.Create(CommonSuccess.GenericUpdateSuccess1, true);
@@ -1092,20 +1226,13 @@ namespace gomind_backend_api.BL
 
         #region Listar examenes del usuario
         public async Task<List<UserExaminationList>> GetUserExaminationsAsync(int userId, int fileType)
-        {
-            // Manejo de ZoneId para AWS (Linux) y Local (Windows)
-            string tzId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? "Pacific SA Standard Time"
-                : "America/Santiago";
-            var chileTimeZone = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-
-            // Ejecución del SP con los parámetros correctos
+        {     
             var examinations = await _dbConnection.ExecuteQueryAsync(
                 "CALL api_get_user_examinations(@p_user_id, @p_file_type)",
                 reader => {
-                    // Conversión de fecha de UTC (DB) a Chile
-                    DateTime utcDate = reader.GetDateTime("created_at");
-                    DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, chileTimeZone);
+                   
+                    var utcDate = DateTime.SpecifyKind(reader.GetDateTime("created_at"), DateTimeKind.Utc );                  
+                    var chileTime = TimeZoneInfo.ConvertTimeFromUtc( utcDate, BL._tzChile);
 
                     return new UserExaminationList
                     {
@@ -1128,16 +1255,13 @@ namespace gomind_backend_api.BL
         #endregion
 
         #region Obtener examenes del usuario por su ID
-        public async Task<UserExaminationDetail> GetExaminationDetailAsync(string uuid, int userId)
-        {
-            string tzId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Pacific SA Standard Time" : "America/Santiago";
-            var chileTimeZone = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-
+        public async Task<UserExaminationDetail> GetExaminationDetailAsync(Guid uuid, int userId)
+        {     
             var result = await _dbConnection.ExecuteQueryAsync(
                 "CALL api_get_examination_detail(@p_uuid, @p_user_id)",
                 reader => {
-                    DateTime utcDate = reader.GetDateTime("created_at");
-                    DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, chileTimeZone);
+                    var utcDate = DateTime.SpecifyKind(reader.GetDateTime("created_at"), DateTimeKind.Utc);
+                    var chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, BL._tzChile);
 
                     return new UserExaminationDetail
                     {
@@ -1158,22 +1282,20 @@ namespace gomind_backend_api.BL
         #region Obtener examenes del usuario por su File Key
         public async Task<UserExaminationDetail> GetExaminationByFileKeyAsync(string fileKey, int userId)
         {
-            string decodedFileKey = WebUtility.UrlDecode(fileKey);
-            string tzId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Pacific SA Standard Time" : "America/Santiago";
-            var chileTimeZone = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+            string decodedFileKey = WebUtility.UrlDecode(fileKey);           
 
             var result = await _dbConnection.ExecuteQueryAsync(
                 "CALL api_get_examination_by_file_key(@p_file_key, @p_user_id)",
                 reader => {
-                    DateTime utcDate = reader.GetDateTime("created_at");
-                    DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, chileTimeZone);
+                    var utcDate = DateTime.SpecifyKind(reader.GetDateTime("created_at"), DateTimeKind.Utc);
+                    var chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, BL._tzChile);
 
                     return new UserExaminationDetail
                     {
                         Uid = reader.GetGuid("uuid").ToString(),
                         FileType = reader.GetInt32("file_type"),
                         FileKey = reader.GetString("file_key"),
-                        CreatedAt = chileTime.ToString("dd-MM-yyyy HH:mm:ss"),                        
+                        CreatedAt = chileTime.ToString("dd-MM-yyyy HH:mm:ss"),
                         AnalysisResults = JsonSerializer.Deserialize<ExaminationAnalysis>(reader.GetString("analysis_results"))
                     };
                 },

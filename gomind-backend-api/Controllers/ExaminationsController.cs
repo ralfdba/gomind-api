@@ -9,6 +9,7 @@ using gomind_backend_api.Models.Parameters;
 using gomind_backend_api.Models.Products;
 using gomind_backend_api.Models.User;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -304,7 +305,7 @@ namespace gomind_backend_api.Controllers
             Description = "Permite obtener los resultados del exámen del usuario en sesión segun su uid.",
             Tags = new[] { "Examinations" }
         )]
-        public async Task<ActionResult<UserExaminationDetail>> GetExaminationDetail(string uid)
+        public async Task<ActionResult<UserExaminationDetail>> GetExaminationDetail(Guid uid)
         {
             try
             {
@@ -331,13 +332,13 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Consultar los examenes por su File Key
-        [HttpGet("analysis-results/file-key/{fileKey}")]
+        [HttpGet("analysis-results/file-key/{file_key}")]
         [SwaggerOperation(
             Summary = "Muestra los resultados del exámen ya analizados del usuario en sesión.",
             Description = "Permite obtener los resultados del exámen del usuario en sesión segun su file key.",
             Tags = new[] { "Examinations" }
         )]
-        public async Task<ActionResult<UserExaminationDetail>> GetByFileKey(string fileKey)
+        public async Task<ActionResult<UserExaminationDetail>> GetByFileKey(string file_key)
         {
             try
             {
@@ -350,7 +351,7 @@ namespace gomind_backend_api.Controllers
                 {
                     return BadRequest(MessageResponse.Create(CommonErrors.UserIdNoValid));
                 }
-                var result = await _bl.GetExaminationByFileKeyAsync(fileKey, userId);
+                var result = await _bl.GetExaminationByFileKeyAsync(file_key, userId);
                 return Ok(result);
             }
             catch (Exception ex)
