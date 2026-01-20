@@ -19,18 +19,21 @@ namespace gomind_backend_api.Services
         {
             try
             {
-                _logger.LogInformation("Iniciando consulta de citas a las: {Time}", DateTimeOffset.Now);
-                
+                _logger.LogInformation("Iniciando consulta de citas (Producer) a las: {Time}", DateTimeOffset.Now);
+
                 var appointments = await _bl.GetAppointmentsCurrentHourAsync();
 
                 if (appointments != null && appointments.Any())
-                {                    
-                    string jsonResponse = JsonSerializer.Serialize(appointments, new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
+                {
+                    _logger.LogInformation("Se encontraron {Count} citas. Procesando registros individuales...", appointments.Count);
 
-                    _logger.LogInformation("Citas encontradas ({Count}): {Data}", appointments.Count, jsonResponse);
+                    foreach (var appo in appointments)
+                    {           
+                        //Incorporar metodo para publicar el SQS
+                        _logger.LogInformation("Procesando Cita ID: {AppointmentId}", appo.AppointmentId);                        
+                    }
+
+                    _logger.LogInformation("Finalizó el procesamiento de la lista actual.");
                 }
                 else
                 {
@@ -39,7 +42,7 @@ namespace gomind_backend_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener citas en el CronJob.");
+                _logger.LogError(ex, "Error crítico al procesar el listado de AppointmentsConfirmedProducer.");
             }
         }
     }

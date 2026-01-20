@@ -228,20 +228,36 @@ namespace gomind_backend_api.Controllers
         }
         #endregion
 
-        [HttpGet("appointments/current-hour")]
-        [SwaggerOperation(Summary = "Lista citas de la hora actual", Description = "Filtra registros del minuto 00 al 59 de la hora en curso.", Tags = new[] { "Appointments" })]
-        public async Task<ActionResult<List<AppointmentsConfirmedByUsers>>> GetCurrentHour()
-        {
-            try
-            {
-                var results = await _bl.GetAppointmentsCurrentHourAsync();
-                return Ok(results);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error recuperando citas de la hora actual");
-                return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
-            }
-        }
+        //[HttpGet("current-hour")]
+        //[SwaggerOperation(Summary = "Lista citas de la hora actual", Description = "Filtra registros del minuto 00 al 59 de la hora en curso.", Tags = new[] { "Appointments" })]
+        //public async Task<ActionResult<List<AppointmentsConfirmedProducer>>> GetCurrentHour()
+        //{
+        //    try
+        //    {
+        //        var results = await _bl.GetAppointmentsCurrentHourAsync();
+        //        return Ok(results);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error recuperando citas de la hora actual");
+        //        return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+        //    }
+        //}
+
+        //[HttpGet("current-hour/details/{id}")]
+        //[SwaggerOperation(Summary = "Lista citas de la hora actual", Description = "Filtra registros del minuto 00 al 59 de la hora en curso.", Tags = new[] { "Appointments" })]
+        //public async Task<ActionResult<AppointmentsConfirmedNotifier>> GetAppoinmetConfirmedDetails(int id)
+        //{
+        //    try
+        //    {
+        //        var results = await _bl.GetUpcomingAppointmentByIdAsync(id);
+        //        return Ok(results);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error recuperando citas de la hora actual");
+        //        return StatusCode(500, MessageResponse.Create(CommonErrors.UnexpectedError(ex.Message)));
+        //    }
+        //}
     }
 }

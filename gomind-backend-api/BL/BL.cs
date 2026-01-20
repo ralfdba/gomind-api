@@ -438,31 +438,72 @@ namespace gomind_backend_api.BL
         #endregion
 
         #region Obtener las citas medicas en estado 2 (Confirmada) dentro de la hora actual
-        public async Task<List<AppointmentsConfirmedByUsers>> GetAppointmentsCurrentHourAsync()
+        public async Task<List<AppointmentsConfirmedProducer>> GetAppointmentsCurrentHourAsync()
         {     
             var appointments = await _dbConnection.ExecuteQueryAsync(
-                "CALL api_get_appointments_current_hour()",
+                "CALL api_get_appointments_current_hour_producer()",
+                reader => {
+                    
+                    return new AppointmentsConfirmedProducer
+                    {
+                        AppointmentId = reader.GetInt32("id")                       
+                    };
+                }
+            );
+
+            return appointments;
+        }
+        #endregion
+
+        #region Obtener detalle de las citas medicas confirmadas por su ID
+        public async Task<AppointmentsConfirmedNotifier> GetUpcomingAppointmentByIdAsync(int appointmentId)
+        {
+            var clCulture = new CultureInfo("es-CL");
+            var result = await _dbConnection.ExecuteQueryAsync(
+                "CALL api_get_upcoming_appointment_detail_notifier(@p_appointment_id)",               
                 reader => {
                     var utcDate = DateTime.SpecifyKind(reader.GetDateTime("schedule_day"), DateTimeKind.Utc);
                     var chileTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, BL._tzChile);
 
                     int stateValue = reader.GetInt16("state");
 
-                    return new AppointmentsConfirmedByUsers
+                    return new AppointmentsConfirmedNotifier
                     {
                         AppointmentId = reader.GetInt32("id"),
-                        UserId = reader.GetInt32("users_id"),
+                        UserFullName = reader.GetString("user_full_name"),
                         UserEmail = reader.GetString("user_email"),
                         ScheduleDay = chileTime.ToString("dd-MM-yyyy HH:mm"),
+                        DayName = clCulture.TextInfo.ToTitleCase(chileTime.ToString("dddd", clCulture)), 
+                        DayNumber = chileTime.ToString("dd"),                                        
+                        MonthName = clCulture.TextInfo.ToTitleCase(chileTime.ToString("MMMM", clCulture)), 
+                        Year = chileTime.ToString("yyyy"),
+                        Time = chileTime.ToString("HH:mm"),
                         StateId = stateValue,
                         StateName = AppointmentExtensions.GetStateName(stateValue),
                         HealthProvider = reader.GetString("health_provider"),
                         Product = reader.GetString("product")
                     };
-                }
+                },
+                new Dictionary<string, object> { { "p_appointment_id", appointmentId } }
             );
 
-            return appointments;
+            var appointment = result.FirstOrDefault();
+
+            if (appointment != null)
+            {
+                #region Se envia el recordatorio de agendamiento por correo
+
+                Destinatario destinatario = new Destinatario();
+                destinatario.Correo = appointment.UserEmail;
+                var statusEnvioCorreo = _notificacion.EnvioRecordatorioAgendamiento(appointment, destinatario);
+
+                _logger.LogInformation("STATUS ENVIO RECORDATORIO - AppointmentID: {id} - Status: {status}",
+                    appointment.AppointmentId,
+                    JsonSerializer.Serialize(statusEnvioCorreo));
+                #endregion
+
+            }
+            return appointment;
         }
         #endregion
 

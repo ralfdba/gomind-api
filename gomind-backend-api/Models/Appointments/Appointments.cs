@@ -56,16 +56,28 @@ namespace gomind_backend_api.Models.Appointments
             [JsonPropertyName("product")]
             public string Product { get; set; }
         }
-        public class AppointmentsConfirmedByUsers
+        public class AppointmentsConfirmedNotifier
         {
             [JsonPropertyName("id")]
             public int AppointmentId { get; set; } = 0;
-            [JsonPropertyName("user_id")]
-            public int UserId { get; set; }
+            [JsonPropertyName("user_full_name")]
+            public string UserFullName { get; set; }
             [JsonPropertyName("user_email")]
             public string UserEmail { get; set; }
             [JsonPropertyName("schedule_day")]
             public string ScheduleDay { get; set; }
+            [JsonPropertyName("formatted_date")]
+            public string FormattedDate { get; set; }
+            [JsonPropertyName("day_name")]
+            public string DayName { get; set; }
+            [JsonPropertyName("day_number")]
+            public string DayNumber { get; set; }
+            [JsonPropertyName("month_name")]
+            public string MonthName { get; set; }
+            [JsonPropertyName("year")]
+            public string Year { get; set; }
+            [JsonPropertyName("time")]
+            public string Time { get; set; }   
             [JsonPropertyName("state")]
             public int StateId { get; set; }
             [JsonPropertyName("state_name")]
@@ -74,6 +86,13 @@ namespace gomind_backend_api.Models.Appointments
             public string HealthProvider { get; set; }
             [JsonPropertyName("product")]
             public string Product { get; set; }
+        }
+
+        public class AppointmentsConfirmedProducer
+        {
+            [JsonPropertyName("id")]
+            public int AppointmentId { get; set; } = 0;          
+           
         }
 
         public static class AppointmentExtensions

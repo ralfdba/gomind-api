@@ -1,0 +1,138 @@
+<html>
+<head>
+	<title>Recordatorio de Cita Médica</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<style type="text/css">
+		/* Estilos base */
+		body {
+			width: 100% !important;
+			-webkit-text-size-adjust: none;
+			margin: 0;
+			padding: 0;
+			background-color: #FAFAFA;
+		}
+
+		img {
+			border: 0;
+			height: auto;
+			line-height: 100%;
+			outline: none;
+			text-decoration: none;
+		}
+
+		table td {
+			border-collapse: collapse;
+		}
+
+		#backgroundTable {
+			height: 100% !important;
+			margin: 0;
+			padding: 0;
+			width: 100% !important;
+		}
+
+		/* Tipografía y Colores */
+		h1 {
+			color: #5D62D9;
+			font-family: Arial, sans-serif;
+			font-size: 26px;
+			font-weight: bold;
+			margin-bottom: 20px;
+		}
+
+		p {
+			color: #444444;
+			font-family: Arial, sans-serif;
+			font-size: 16px;
+			line-height: 160%;
+			margin-bottom: 15px;
+		}
+
+		/* Estilo de la Tabla de Detalles */
+		.details-table {
+			background-color: #f8f9ff;
+			border-radius: 10px;
+			border: 1px solid #eef0ff;
+			margin: 20px 0;
+		}
+
+		.details-label {
+			color: #5D62D9;
+			font-family: Arial, sans-serif;
+			font-size: 14px;
+			font-weight: bold;
+			padding: 15px 0 5px 20px;
+			text-transform: uppercase;
+		}
+
+		.details-value {
+			color: #202020;
+			font-family: Arial, sans-serif;
+			font-size: 18px;
+			font-weight: bold;
+			padding: 0 0 15px 20px;
+		}
+
+		/* Recomendaciones */
+		.highlight {
+			color: #5D62D9;
+			font-weight: bold;
+		}
+	</style>
+</head>
+<body bgcolor="#FAFAFA">
+	<table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" id="backgroundTable">
+		<tr>
+			<td align="center" valign="top">
+				<table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff;">
+					<tr>
+						<td>
+							<img src="https://gomind-desa-resources.s3.us-east-1.amazonaws.com/banner-recordatorio-cita.png" width="600" style="display: block; max-width: 600px;" alt="goMind Header">
+						</td>
+					</tr>
+					<tr>
+						<td align="left" style="padding: 40px;">
+							<h1>Hola [NOMBRE_USUARIO]</h1>
+							<p>Te recordamos que tienes una cita médica programada. Aquí tienes los detalles principales:</p>
+
+							<table class="details-table" border="0" cellpadding="0" cellspacing="0" width="100%">
+								<tr>
+									<td class="details-label">Fecha</td>
+								</tr>
+								<tr>
+									<td class="details-value">[FECHA]</td>
+								</tr>
+								<tr>
+									<td class="details-label">Hora</td>
+								</tr>
+								<tr>
+									<td class="details-value">[HORA]</td>
+								</tr>
+								<tr>
+									<td class="details-label">Modalidad</td>
+								</tr>
+								<tr>
+									<td class="details-value">[MODALIDAD]</td>
+								</tr>
+							</table>
+
+							<p><strong>Recomendaciones:</strong></p>
+							<p>• Si es tu primera cita, te sugerimos conectarte o llegar <span class="highlight">5 minutos antes</span>.</p>
+							<p>• Ten a la mano tus <span class="highlight">exámenes recientes</span> si los necesitas para la consulta.</p>
+							<p>• Si necesitas reprogramar o cancelar, hazlo con al menos <span class="highlight">24 horas de antelación</span> desde la plataforma.</p>
+
+							<br>
+							<p>Nos vemos pronto,<br><strong>Equipo Gomind.</strong></p>
+						</td>
+					</tr>
+					<tr>
+						<td align="center" bgcolor="#5D62D9" style="padding: 15px;">
+							<p style="color: #ffffff; font-size: 12px; margin: 0;">Este mail se ha generado de forma automática. Por favor, no lo respondas directamente.</p>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
