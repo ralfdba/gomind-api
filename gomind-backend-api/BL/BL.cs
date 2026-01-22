@@ -1313,7 +1313,7 @@ namespace gomind_backend_api.BL
                         AnalysisResults = JsonSerializer.Deserialize<ExaminationAnalysis>(reader.GetString("analysis_results"))
                     };
                 },
-                new Dictionary<string, object> { { "p_uuid", uuid }, { "p_user_id", userId } }
+                new Dictionary<string, object> { { "p_uuid", uuid.ToString() }, { "p_user_id", userId } }
             );
 
             return result.FirstOrDefault();

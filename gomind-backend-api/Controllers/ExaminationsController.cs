@@ -299,7 +299,7 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Consultar los examenes por su id
-        [HttpGet("analysis-results/result-id/{uid}")]
+        [HttpGet("analysis-results/{uid}")]
         [SwaggerOperation(
             Summary = "Muestra los resultados del exámen ya analizados del usuario en sesión",
             Description = "Permite obtener los resultados del exámen del usuario en sesión segun su uid.",
@@ -332,7 +332,7 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Consultar los examenes por su File Key
-        [HttpGet("analysis-results/file-key/{file_key}")]
+        [HttpGet("analysis-results/{file_key}")]
         [SwaggerOperation(
             Summary = "Muestra los resultados del exámen ya analizados del usuario en sesión.",
             Description = "Permite obtener los resultados del exámen del usuario en sesión segun su file key.",

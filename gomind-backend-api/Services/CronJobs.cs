@@ -1,4 +1,6 @@
-﻿using gomind_backend_api.BL;
+﻿using Amazon.SQS;
+using Amazon.SQS.Model;
+using gomind_backend_api.BL;
 using Quartz;
 using System.Text.Json;
 
@@ -9,10 +11,14 @@ namespace gomind_backend_api.Services
     {
         private readonly ILogger<CronJobs> _logger;
         private readonly BL.BL _bl;
-        public CronJobs(ILogger<CronJobs> logger, BL.BL bl)
+        private readonly IAmazonSQS _sqsClient;
+        private readonly string _queueUrl;
+        public CronJobs(ILogger<CronJobs> logger, BL.BL bl, IAmazonSQS sqsClient, IConfiguration configuration)
         {
             _logger = logger;
             _bl = bl;
+            _sqsClient = sqsClient;
+            _queueUrl = configuration["AWS:SQS:QueueUrl"];
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -30,7 +36,15 @@ namespace gomind_backend_api.Services
                     foreach (var appo in appointments)
                     {           
                         //Incorporar metodo para publicar el SQS
-                        _logger.LogInformation("Procesando Cita ID: {AppointmentId}", appo.AppointmentId);                        
+                        _logger.LogInformation("Procesando Cita ID: {AppointmentId}", appo.AppointmentId);
+                        string messageBody = JsonSerializer.Serialize(appo);
+                        var sendRequest = new SendMessageRequest
+                        {
+                            QueueUrl = _queueUrl,
+                            MessageBody = messageBody                            
+                        };
+                       
+                        await _sqsClient.SendMessageAsync(sendRequest);
                     }
 
                     _logger.LogInformation("Finalizó el procesamiento de la lista actual.");

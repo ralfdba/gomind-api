@@ -1,5 +1,6 @@
 using Amazon.DynamoDBv2;
 using Amazon.S3;
+using Amazon.SQS;
 using AWS.Logger;
 using gomind_backend_api.AWS;
 using gomind_backend_api.BL;
@@ -109,6 +110,11 @@ builder.Services.AddAWSService<IAmazonDynamoDB>();
 builder.Services.AddScoped<IDynamoDbService, DynamoDbService>();
 #endregion
 
+#region AWS SQS
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+builder.Services.AddAWSService<IAmazonSQS>();
+#endregion
+
 #region BL
 builder.Services.AddScoped<BL>();
 #endregion
@@ -133,6 +139,10 @@ builder.Services.AddQuartz(q =>
 
 // 3. Agregar el servicio de hosting de Quartz
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+#endregion
+
+#region SQS Consumer Service
+builder.Services.AddHostedService<SQSConsumerWorker>();
 #endregion
 
 #region Resources Services
