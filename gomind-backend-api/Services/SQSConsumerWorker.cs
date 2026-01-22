@@ -86,7 +86,7 @@ namespace gomind_backend_api.Services
 
                     if (result != null)
                     {
-                        _logger.LogInformation("Notificación procesada para: {User} ({Email})", result.UserFullName, result.UserEmail);
+                        _logger.LogInformation("Notificación procesada para: {User}", result.UserFullName);
                     }
                     else
                     {
