@@ -1177,13 +1177,13 @@ namespace gomind_backend_api.BL
             {
                 // Buscamos coincidencia en nuestra base de datos por nombre
                 var dbParam = dbParameters.FirstOrDefault(p => p.Name.ToLower() == raw.Parameter.ToLower().Trim());
-
+                
                 var paramDto = new AnalysisParameter
                 {                    
-                    Uid = dbParam?.Uid ?? "parameter_not_created_at_db",
+                    Uid = dbParam?.Uid ?? null,
                     Name = raw.Parameter,
                     Description = dbParam?.Description ?? $"Análisis de {raw.Parameter}",
-                    UnitOfMeasure = !string.IsNullOrEmpty(raw.Unit) ? raw.Unit : (dbParam?.Unit ?? ""),
+                    UnitOfMeasure = !string.IsNullOrEmpty(dbParam?.Unit) ? dbParam?.Unit : (raw.Unit ?? ""),
                     Analysis = new List<AnalysisMetric>            
                     {
                         new AnalysisMetric
@@ -1194,19 +1194,41 @@ namespace gomind_backend_api.BL
                     }
                 };
 
-                // 5. Aplicar Evaluación de Rangos
-                // Convertimos el string "raw.Value" a decimal para la comparativa
-                if (TryParseValor(JsonSerializer.SerializeToElement(raw.Value), out decimal valorNumerico))
-                {
-                    bool isInRange = RangeEvaluator.IsValueValid(valorNumerico, raw.ReferenceRanges, dbParam?.Config);
-                   
-                    if (!isInRange)
-                    {
-                        finalAnalysis.ParametersOutOfRange.Add(paramDto);
-                    }
-                }
+                //Paso intermedio, se valida que vengan rangos validos
+                bool tieneRangosValidos = raw.ReferenceRanges != null &&
+                         raw.ReferenceRanges.Count > 0 &&
+                         !raw.ReferenceRanges.Any(r => string.IsNullOrWhiteSpace(r) ||
+                                                       r.Trim().Equals("NULL", StringComparison.OrdinalIgnoreCase));
 
-                finalAnalysis.ParametersFound.Add(paramDto);
+                if (tieneRangosValidos) {
+
+                    // Si no se encuentra el parámetro en la base de datos, se registra como "no creado"
+                    if (dbParam == null)
+                    {
+                        await _dbConnection.ExecuteNonQueryAsync(
+                            "CALL api_insert_parameter_not_created(@p_name, @p_unit_of_measure);",
+                            new Dictionary<string, object>
+                            {                            
+                                { "p_name", raw.Parameter.Trim() },                           
+                                { "p_unit_of_measure", raw.Unit ?? "" }
+                            });
+                    }
+
+                    // 5. Aplicar Evaluación de Rangos
+                    // Convertimos el string "raw.Value" a decimal para la comparativa
+                    if (TryParseValor(JsonSerializer.SerializeToElement(raw.Value), out decimal valorNumerico))
+                    {
+                        bool isInRange = RangeEvaluator.IsValueValid(valorNumerico, raw.ReferenceRanges, dbParam?.Config);
+
+                        if (!isInRange)
+                        {
+                            finalAnalysis.ParametersOutOfRange.Add(paramDto);
+                        }
+                    }
+
+                    finalAnalysis.ParametersFound.Add(paramDto);
+                }
+                
             }
 
             // 6. Actualizar contadores de metadata

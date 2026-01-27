@@ -213,8 +213,7 @@ namespace gomind_backend_api.Models.Parameters
     }
 
     public class AnalysisParameter
-    {        
-
+    {  
         [JsonPropertyName("uid")]
         public string Uid { get; set; } = string.Empty;
 
