@@ -299,7 +299,7 @@ namespace gomind_backend_api.Controllers
         #endregion
 
         #region Consultar los examenes por su id
-        [HttpGet("analysis-results/{uid}")]
+        [HttpGet("analysis-results/{uid:guid}")]
         [SwaggerOperation(
             Summary = "Muestra los resultados del exámen ya analizados del usuario en sesión",
             Description = "Permite obtener los resultados del exámen del usuario en sesión segun su uid.",

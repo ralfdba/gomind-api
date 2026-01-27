@@ -41,8 +41,8 @@ namespace gomind_backend_api.Models.Parameters
     }
     public class KeyResultDetail
     {
-        [JsonPropertyName("key")]
-        public required string Key { get; set; }
+        //[JsonPropertyName("key")]
+        //public required string Key { get; set; }
 
         [JsonPropertyName("invalid_ranges")]
         public List<string>? InvalidRanges { get; set; }
@@ -232,10 +232,7 @@ namespace gomind_backend_api.Models.Parameters
     }
 
     public class AnalysisMetric
-    {
-        [JsonPropertyName("key")]
-        public string Key { get; set; } = string.Empty;
-
+    {    
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
 

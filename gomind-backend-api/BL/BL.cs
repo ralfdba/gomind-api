@@ -1146,7 +1146,7 @@ namespace gomind_backend_api.BL
             DateTime chileTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, chileTimeZone);
 
             // 1. Extraer datos brutos del JSON (Ruta en S3 / Archivo)
-            var rawParameters = await GetParametersFromJsonAsync2(jsonStream);
+            var rawParameters = await GetParametersFromJsonAsync(jsonStream);
 
             // 2. Preparar el objeto de respuesta final
             var finalAnalysis = new ExaminationAnalysis
@@ -1180,15 +1180,14 @@ namespace gomind_backend_api.BL
 
                 var paramDto = new AnalysisParameter
                 {                    
-                    Uid = dbParam?.Uid ?? Guid.NewGuid().ToString(),
+                    Uid = dbParam?.Uid ?? "parameter_not_created_at_db",
                     Name = raw.Parameter,
                     Description = dbParam?.Description ?? $"Análisis de {raw.Parameter}",
                     UnitOfMeasure = !string.IsNullOrEmpty(raw.Unit) ? raw.Unit : (dbParam?.Unit ?? ""),
                     Analysis = new List<AnalysisMetric>            
                     {
                         new AnalysisMetric
-                        {
-                            Key = "Valor",
+                        {                            
                             Value = raw.Value,
                             ReferenceRanges = raw.ReferenceRanges
                         }
@@ -1197,11 +1196,10 @@ namespace gomind_backend_api.BL
 
                 // 5. Aplicar Evaluación de Rangos
                 // Convertimos el string "raw.Value" a decimal para la comparativa
-                if (TryParseValor2(JsonSerializer.SerializeToElement(raw.Value), out decimal valorNumerico))
+                if (TryParseValor(JsonSerializer.SerializeToElement(raw.Value), out decimal valorNumerico))
                 {
                     bool isInRange = RangeEvaluator.IsValueValid(valorNumerico, raw.ReferenceRanges, dbParam?.Config);
-
-                    // !false == true -> Se agrega a la lista de parámetros fuera de rango.
+                   
                     if (!isInRange)
                     {
                         finalAnalysis.ParametersOutOfRange.Add(paramDto);
@@ -1479,86 +1477,7 @@ namespace gomind_backend_api.BL
 
             return selectedItem;
         }           
-        public async Task<List<ParameterPlane>> GetParametersFromJsonAsync(Stream jsonStream)
-        {
-            var parametros = new List<ParameterPlane>();
-
-            using var doc = await JsonDocument.ParseAsync(jsonStream);
-            var root = doc.RootElement;
-
-            // Verificamos si la raíz es un array
-            if (root.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var element in root.EnumerateArray())
-                {
-                    foreach (var item in element.EnumerateObject())
-                    {
-                        var value = item.Value;
-
-                        if (value.ValueKind == JsonValueKind.Object)
-                        {
-                            var hasSubParameters = value.EnumerateObject().Any(p =>
-                                p.Value.ValueKind == JsonValueKind.Object ||
-                                p.Value.ValueKind == JsonValueKind.String ||
-                                p.Value.ValueKind == JsonValueKind.Number
-                            );
-
-                            // Caso 1: agrupador con subparámetros
-                            if (hasSubParameters && value.EnumerateObject().All(p => p.Value.ValueKind == JsonValueKind.Object))
-                            {
-                                foreach (var subItem in value.EnumerateObject())
-                                {
-                                    var nombre = subItem.Name.ToLowerInvariant();
-                                    var subValue = subItem.Value;
-
-                                    if (subValue.ValueKind == JsonValueKind.Object)
-                                    {
-                                        foreach (var inner in subValue.EnumerateObject())
-                                        {
-                                            var keyResult = inner.Name.ToLowerInvariant();
-                                            if (keyResult == "unidad de medida") continue;
-
-                                            if (TryParseValor(inner.Value, out var valor))
-                                            {
-                                                parametros.Add(new ParameterPlane
-                                                {
-                                                    Nombre = nombre,
-                                                    KeyResult = keyResult,
-                                                    Dato = valor
-                                                });
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            // Caso 2: parámetro directo
-                            else
-                            {
-                                var nombre = item.Name.ToLowerInvariant();
-                                foreach (var inner in value.EnumerateObject())
-                                {
-                                    var keyResult = inner.Name.ToLowerInvariant();
-                                    if (keyResult == "unidad de medida") continue;
-
-                                    if (TryParseValor(inner.Value, out var valor))
-                                    {
-                                        parametros.Add(new ParameterPlane
-                                        {
-                                            Nombre = nombre,
-                                            KeyResult = keyResult,
-                                            Dato = valor
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return parametros;
-        }
-        public async Task<List<RawParameter>> GetParametersFromJsonAsync2(Stream jsonStream)
+        public async Task<List<RawParameter>> GetParametersFromJsonAsync(Stream jsonStream)
         {
             var list = new List<RawParameter>();
             using var doc = await JsonDocument.ParseAsync(jsonStream);
@@ -1567,16 +1486,13 @@ namespace gomind_backend_api.BL
             {
                 string sectionName = section.Name; // Ej: "HEMOGRAMA VHS"
 
-                // Cada sección es un array de objetos según tu estándar
+                // Cada sección es un array de objetos 
                 if (section.Value.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var entry in section.Value.EnumerateArray())
                     {
                         foreach (var parameter in entry.EnumerateObject())
-                        {
-                            // parameter.Name ej: "Hemoglobina"
-                            // parameter.Value ej: { "Valor": "13.4", "Unidad...": "g/dL", "Valor_Ref": [...] }
-
+                        {     
                             var raw = new RawParameter
                             {
                                 Parameter = sectionName,
@@ -1597,30 +1513,8 @@ namespace gomind_backend_api.BL
                 }
             }
             return list;
-        }       
-
-        private bool TryParseValor(JsonElement valorElement, out decimal valor)
-        {
-            valor = 0;
-
-            try
-            {
-                if (valorElement.ValueKind == JsonValueKind.Number)
-                {
-                    return valorElement.TryGetDecimal(out valor);
-                }
-                else if (valorElement.ValueKind == JsonValueKind.String)
-                {
-                    var str = valorElement.GetString()?.Replace(",", ".").Replace("%", "").Trim();
-                    return decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out valor);
-                }
-            }
-            catch { }
-
-            return false;
-        }
-
-        private bool TryParseValor2(JsonElement element, out decimal valor)
+        }    
+        private bool TryParseValor(JsonElement element, out decimal valor)
         {
             valor = 0;
             string? rawValue = element.ValueKind == JsonValueKind.Number
@@ -1629,12 +1523,15 @@ namespace gomind_backend_api.BL
 
             if (string.IsNullOrWhiteSpace(rawValue)) return false;
 
-            // Limpieza agresiva: "13,4 g/dL" -> "13.4"
+            // Limpieza del campo Valor
             var cleanValue = rawValue
+                .Replace("<", "")
+                .Replace(">", "")
+                .Replace("=", "")
                 .Replace(",", ".")
                 .Replace("%", "")
-                .Split(' ')[0] // Toma solo el número si viene "13.4 g/dL"
-                .Trim();
+                .Trim() 
+                .Split(' ')[0];
 
             return decimal.TryParse(cleanValue, NumberStyles.Any, CultureInfo.InvariantCulture, out valor);
         }
